@@ -126,19 +126,33 @@ func (m advancedSettingsModel) Update(msg tea.Msg) (advancedSettingsModel, tea.C
 			m.navigateDown()
 
 		case "left":
-			m.adjustValue(-1)
-			return m, m.scheduleLiveApply(liveApplyDebounce)
-
-		case "right":
-			m.adjustValue(1)
-			return m, m.scheduleLiveApply(liveApplyDebounce)
-
-		case " ", "space":
+			if isSliderField(m.focusedField) {
+				m.adjustValue(-1)
+				return m, m.scheduleLiveApply(liveApplyDebounce)
+			}
+			m.cycleToggle(-1)
 			if m.shouldLiveApplyToggle() {
-				m.toggleValue()
 				return m, m.scheduleLiveApply(liveApplyDebounceToggle)
 			}
-			m.toggleValue()
+
+		case "right":
+			if isSliderField(m.focusedField) {
+				m.adjustValue(1)
+				return m, m.scheduleLiveApply(liveApplyDebounce)
+			}
+			m.cycleToggle(1)
+			if m.shouldLiveApplyToggle() {
+				return m, m.scheduleLiveApply(liveApplyDebounceToggle)
+			}
+
+		case " ", "space":
+			if isSliderField(m.focusedField) {
+				return m, nil
+			}
+			m.cycleToggle(1)
+			if m.shouldLiveApplyToggle() {
+				return m, m.scheduleLiveApply(liveApplyDebounceToggle)
+			}
 
 		case "e", "E":
 			if m.focusedField == fieldSDRMaxLuminance && m.monitor.EDIDPeakLuminance > 0 {
@@ -244,7 +258,18 @@ func (m *advancedSettingsModel) adjustValue(delta int) {
 	}
 }
 
-func (m *advancedSettingsModel) toggleValue() {
+// isSliderField returns true for fields driven by left/right arrows as
+// continuous-value sliders. The rest are discrete toggles.
+func isSliderField(field int) bool {
+	return field == fieldSDRBrightness ||
+		field == fieldSDRSaturation ||
+		field == fieldSDRMinLuminance ||
+		field == fieldSDRMaxLuminance
+}
+
+// cycleToggle advances or rewinds the focused discrete field. delta is +1 or
+// -1. Used by both arrow keys and Space (Space passes +1).
+func (m *advancedSettingsModel) cycleToggle(delta int) {
 	switch m.focusedField {
 	case fieldBitDepth:
 		if m.monitor.BitDepth == 8 {
@@ -255,6 +280,10 @@ func (m *advancedSettingsModel) toggleValue() {
 
 	case fieldColorMode:
 		modes := colorModesFor(m.monitor)
+		n := len(modes)
+		if n == 0 {
+			return
+		}
 		currentIdx := 0
 		for i, mode := range modes {
 			if m.monitor.ColorMode == mode {
@@ -262,10 +291,9 @@ func (m *advancedSettingsModel) toggleValue() {
 				break
 			}
 		}
-		currentIdx = (currentIdx + 1) % len(modes)
+		currentIdx = ((currentIdx + delta) % n + n) % n
 		m.monitor.ColorMode = modes[currentIdx]
 
-		// If we switched away from HDR and were focused on SDR fields, move focus
 		if !strings.Contains(m.monitor.ColorMode, "hdr") && isHDRField(m.focusedField) {
 			m.focusedField = fieldColorMode
 		}
@@ -275,6 +303,7 @@ func (m *advancedSettingsModel) toggleValue() {
 		if curr == "" {
 			curr = "default"
 		}
+		n := len(sdrEOTFOptions)
 		idx := 0
 		for i, v := range sdrEOTFOptions {
 			if v == curr {
@@ -282,25 +311,23 @@ func (m *advancedSettingsModel) toggleValue() {
 				break
 			}
 		}
-		idx = (idx + 1) % len(sdrEOTFOptions)
+		idx = ((idx + delta) % n + n) % n
 		m.monitor.SDREOTF = sdrEOTFOptions[idx]
 
 	case fieldVRR:
-		m.monitor.VRR = (m.monitor.VRR + 1) % 3
+		m.monitor.VRR = ((m.monitor.VRR+delta)%3 + 3) % 3
 
 	case fieldTransform:
-		m.monitor.Transform = (m.monitor.Transform + 1) % 8
+		m.monitor.Transform = ((m.monitor.Transform+delta)%8 + 8) % 8
 
 	case fieldUseDescFormat:
 		if canUseDescFormat(*m.monitor) {
 			m.monitor.UseDescFormat = !m.monitor.UseDescFormat
-			// Persist immediately so the setting survives across sessions
-			// even when the user never saves a profile.
 			if s, err := loadSettings(); err == nil {
 				setMonitorPref(s, m.monitor.HardwareID, MonitorPref{
 					UseDescFormat: m.monitor.UseDescFormat,
 				})
-				_ = saveSettings(s) // best-effort; UI flow continues on error
+				_ = saveSettings(s)
 			}
 		}
 	}
@@ -545,7 +572,7 @@ func (m advancedSettingsModel) View() string {
 		Foreground(fgDim).
 		MarginTop(1)
 
-	controls := "[Tab/↑↓] Navigate  [Space] Toggle  [←→] Adjust  [E] EDID fill\n[Enter] Apply  [Esc] Cancel"
+	controls := "[Tab/↑↓] Navigate  [←→] Adjust/Cycle  [Space] Next  [E] EDID fill\n[Enter] Apply  [Esc] Cancel"
 	content.WriteString(controlsStyle.Render(controls))
 
 	dialog := dialogStyle.Render(content.String())
