@@ -1,7 +1,7 @@
 # HyprMon (fork)
 
-> Fork of [erans/hyprmon](https://github.com/erans/hyprmon) v0.0.15 with three
-> additions on top of upstream:
+> Fork of [erans/hyprmon](https://github.com/erans/hyprmon) v0.0.15 with the
+> following changes on top of upstream:
 >
 > 1. HDR `sdr_min_luminance` and `sdr_max_luminance` controls in the Advanced
 >    Display Settings dialog.
@@ -11,10 +11,18 @@
 > 3. Primary monitor anchor: press `1` on a selected monitor to mark it as
 >    primary. On apply, all positions are shifted so the primary sits at
 >    `(0, 0)` and the others move by the same delta to keep the relative
->    arrangement. Persisted per HardwareID in `settings.json`. Covers the
->    `(0, 0)`-fallback path some apps use when choosing which monitor to
->    open on; combine with `workspace=..., default:true` in `hyprland.conf`
->    for full "main monitor" behaviour.
+>    arrangement. Persisted per HardwareID in `settings.json`.
+> 4. **monitorv2 throughout.** The fork writes monitorv2 block syntax (not
+>    legacy v1 `monitor =`) and applies via file-write plus `hyprctl reload`.
+>    v1 is missing `sdr_min_luminance`, `sdr_max_luminance`, and `sdr_eotf`
+>    from its parser, so it cannot represent HDR luminance at all. Switching
+>    to v2 lets every supported field land both at runtime and on disk.
+> 5. Negative-coordinate TUI rendering: monitors at negative X/Y (e.g. a
+>    portrait panel left of an anchored primary) are no longer drawn off the
+>    canvas edge.
+> 6. Diagnostic strip in the Advanced Display Settings dialog shows the apply
+>    count, last apply timestamp, the exact action being taken, and any
+>    Hyprland error verbatim.
 >
 > All other behaviour is identical to upstream. PR to upstream is the
 > eventual goal.

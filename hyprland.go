@@ -334,9 +334,8 @@ func parseMode(modeStr string) *Mode {
 	}
 }
 
-// buildApplyMonitorCmd returns the shell command that applyMonitor would run.
-// Exposed so the live-apply diagnostics in advanced_settings can show the
-// exact hyprctl invocation the user is issuing.
+// buildApplyMonitorCmd describes the action applyMonitor performs (write v2
+// block + hyprctl reload). Shown in the dialog's diagnostic strip.
 func buildApplyMonitorCmd(m Monitor) (string, error) {
 	if !isValidMonitorName(m.Name) {
 		return "", fmt.Errorf("invalid monitor name: %s", m.Name)
@@ -344,130 +343,31 @@ func buildApplyMonitorCmd(m Monitor) (string, error) {
 	if !isValidColorMode(m.ColorMode) {
 		return "", fmt.Errorf("invalid color mode: %s", m.ColorMode)
 	}
-
-	if !m.Active {
-		return fmt.Sprintf("hyprctl keyword monitor \"%s,disable\"", m.Name), nil
-	}
-
-	if m.IsMirrored && m.MirrorSource != "" {
-		if !isValidMonitorName(m.MirrorSource) {
-			return "", fmt.Errorf("invalid mirror source name: %s", m.MirrorSource)
-		}
-		return fmt.Sprintf("hyprctl keyword monitor \"%s,%dx%d@%.2f,%dx%d,%.2f,mirror,%s\"",
-			m.Name, m.PxW, m.PxH, m.Hz, m.X, m.Y, m.Scale, m.MirrorSource), nil
-	}
-
-	cmd := fmt.Sprintf("hyprctl keyword monitor \"%s,%dx%d@%.2f,%dx%d,%.2f",
-		m.Name, m.PxW, m.PxH, m.Hz, m.X, m.Y, m.Scale)
-	if m.BitDepth == 10 {
-		cmd += ",bitdepth,10"
-	}
-	if m.ColorMode != "" && m.ColorMode != "srgb" {
-		cmd += fmt.Sprintf(",cm,%s", m.ColorMode)
-	}
-	if m.ColorMode == "hdr" || m.ColorMode == "hdredid" {
-		if m.SDRBrightness != 0 && m.SDRBrightness != 1.0 {
-			cmd += fmt.Sprintf(",sdrbrightness,%.2f", m.SDRBrightness)
-		}
-		if m.SDRSaturation != 0 && m.SDRSaturation != 1.0 {
-			cmd += fmt.Sprintf(",sdrsaturation,%.2f", m.SDRSaturation)
-		}
-		if m.SDRMinLuminance > 0 {
-			cmd += fmt.Sprintf(",sdr_min_luminance,%.2f", m.SDRMinLuminance)
-		}
-		if m.SDRMaxLuminance > 0 {
-			cmd += fmt.Sprintf(",sdr_max_luminance,%.2f", m.SDRMaxLuminance)
-		}
-	}
-	if m.VRR > 0 {
-		cmd += fmt.Sprintf(",vrr,%d", m.VRR)
-	}
-	if m.Transform > 0 {
-		cmd += fmt.Sprintf(",transform,%d", m.Transform)
-	}
-	cmd += "\""
-	return cmd, nil
+	path := getConfigPath()
+	return fmt.Sprintf("write monitorv2{output=%s ...} -> %s ; hyprctl reload", m.Name, path), nil
 }
 
+// applyMonitor writes/replaces this monitor's v2 block then triggers reload.
+// Other monitors' blocks in the file are preserved.
 func applyMonitor(m Monitor) error {
-	// Validate monitor name to prevent command injection
 	if !isValidMonitorName(m.Name) {
 		return fmt.Errorf("invalid monitor name: %s", m.Name)
 	}
-
-	// Validate color mode if set
 	if !isValidColorMode(m.ColorMode) {
 		return fmt.Errorf("invalid color mode: %s", m.ColorMode)
 	}
-
-	var cmd string
-	if m.Active {
-		if m.IsMirrored && m.MirrorSource != "" {
-			// Validate mirror source name
-			if !isValidMonitorName(m.MirrorSource) {
-				return fmt.Errorf("invalid mirror source name: %s", m.MirrorSource)
-			}
-			// Mirror syntax: monitor=NAME,resolution,position,scale,mirror,SOURCE_MONITOR
-			cmd = fmt.Sprintf("hyprctl keyword monitor \"%s,%dx%d@%.2f,%dx%d,%.2f,mirror,%s\"",
-				m.Name, m.PxW, m.PxH, m.Hz, m.X, m.Y, m.Scale, m.MirrorSource)
-		} else {
-			// Build base command for regular monitor
-			cmd = fmt.Sprintf("hyprctl keyword monitor \"%s,%dx%d@%.2f,%dx%d,%.2f",
-				m.Name, m.PxW, m.PxH, m.Hz, m.X, m.Y, m.Scale)
-
-			// Add advanced settings (only for non-mirrored monitors)
-			if m.BitDepth == 10 {
-				cmd += ",bitdepth,10"
-			}
-
-			if m.ColorMode != "" && m.ColorMode != "srgb" {
-				cmd += fmt.Sprintf(",cm,%s", m.ColorMode)
-			}
-
-			// SDR settings only apply when in HDR mode
-			if m.ColorMode == "hdr" || m.ColorMode == "hdredid" {
-				if m.SDRBrightness != 0 && m.SDRBrightness != 1.0 {
-					cmd += fmt.Sprintf(",sdrbrightness,%.2f", m.SDRBrightness)
-				}
-				if m.SDRSaturation != 0 && m.SDRSaturation != 1.0 {
-					cmd += fmt.Sprintf(",sdrsaturation,%.2f", m.SDRSaturation)
-				}
-				if m.SDRMinLuminance > 0 {
-					cmd += fmt.Sprintf(",sdr_min_luminance,%.2f", m.SDRMinLuminance)
-				}
-				if m.SDRMaxLuminance > 0 {
-					cmd += fmt.Sprintf(",sdr_max_luminance,%.2f", m.SDRMaxLuminance)
-				}
-			}
-
-			if m.VRR > 0 {
-				cmd += fmt.Sprintf(",vrr,%d", m.VRR)
-			}
-
-			if m.Transform > 0 {
-				cmd += fmt.Sprintf(",transform,%d", m.Transform)
-			}
-
-			cmd += "\""
-		}
-	} else {
-		cmd = fmt.Sprintf("hyprctl keyword monitor \"%s,disable\"", m.Name)
+	if err := writeOrReplaceMonitorV2(m); err != nil {
+		return err
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), hyprctlTimeout)
-	defer cancel()
-
-	return exec.CommandContext(ctx, "sh", "-c", cmd).Run()
+	return reloadConfig()
 }
 
 func applyMonitors(monitors []Monitor) error {
 	normalizePositions(monitors)
-	for _, m := range monitors {
-		if err := applyMonitor(m); err != nil {
-			return fmt.Errorf("failed to apply monitor %s: %w", m.Name, err)
-		}
+	if err := writeConfig(monitors); err != nil {
+		return err
 	}
-	return nil
+	return reloadConfig()
 }
 
 func getConfigPath() string {
@@ -492,15 +392,14 @@ func getConfigPath() string {
 	return filepath.Join(home, ".config", "hypr", "hyprland.conf")
 }
 
-// generateMonitorLine creates the monitor configuration line for a monitor
-func generateMonitorLine(m Monitor) string {
-	// Validate monitor name (defensive check)
+// generateMonitorV2Block returns a Hyprland monitorv2 { ... } block for a
+// monitor. v2 is the only Hyprland monitor syntax that supports the full set
+// of fields, including sdr_min_luminance and sdr_max_luminance.
+func generateMonitorV2Block(m Monitor) string {
 	if !isValidMonitorName(m.Name) {
-		return fmt.Sprintf("# Invalid monitor name: %s", m.Name)
+		return fmt.Sprintf("# Invalid monitor name: %s\n", m.Name)
 	}
 
-	// Resolve identifier: desc:<description> when the user opted in and the
-	// description is unambiguous and safe; otherwise the connector name.
 	identifier := m.Name
 	if m.UseDescFormat && canUseDescFormat(m) {
 		if desc := sanitizeDesc(m.EDIDName); desc != "" {
@@ -508,57 +407,163 @@ func generateMonitorLine(m Monitor) string {
 		}
 	}
 
+	var sb strings.Builder
+	sb.WriteString("monitorv2 {\n")
+	sb.WriteString(fmt.Sprintf("  output = %s\n", identifier))
+
 	if !m.Active {
-		return fmt.Sprintf("monitor=%s,disable", identifier)
+		sb.WriteString("  disabled = 1\n")
+		sb.WriteString("}\n")
+		return sb.String()
 	}
 
-	var monLine string
+	sb.WriteString(fmt.Sprintf("  mode = %dx%d@%.2f\n", m.PxW, m.PxH, m.Hz))
+	sb.WriteString(fmt.Sprintf("  position = %dx%d\n", m.X, m.Y))
+	sb.WriteString(fmt.Sprintf("  scale = %.2f\n", m.Scale))
+
 	if m.IsMirrored && m.MirrorSource != "" {
-		// Validate mirror source name (defensive check)
-		if !isValidMonitorName(m.MirrorSource) {
-			return fmt.Sprintf("# Invalid mirror source: %s", m.MirrorSource)
-		}
-		// Mirror syntax: monitor=IDENT,resolution,position,scale,mirror,SOURCE_CONNECTOR
-		monLine = fmt.Sprintf("monitor=%s,%dx%d@%.2f,%dx%d,%.2f,mirror,%s",
-			identifier, m.PxW, m.PxH, m.Hz, m.X, m.Y, m.Scale, m.MirrorSource)
-	} else {
-		// Regular monitor configuration
-		monLine = fmt.Sprintf("monitor=%s,%dx%d@%.2f,%dx%d,%.2f",
-			identifier, m.PxW, m.PxH, m.Hz, m.X, m.Y, m.Scale)
-
-		// Add advanced settings (only for non-mirrored monitors)
-		if m.BitDepth == 10 {
-			monLine += ",bitdepth,10"
-		}
-		if m.ColorMode != "" && m.ColorMode != "srgb" {
-			// Validate color mode (defensive check)
-			if isValidColorMode(m.ColorMode) {
-				monLine += fmt.Sprintf(",cm,%s", m.ColorMode)
-			}
-		}
-		if m.ColorMode == "hdr" || m.ColorMode == "hdredid" {
-			if m.SDRBrightness != 0 && m.SDRBrightness != 1.0 {
-				monLine += fmt.Sprintf(",sdrbrightness,%.2f", m.SDRBrightness)
-			}
-			if m.SDRSaturation != 0 && m.SDRSaturation != 1.0 {
-				monLine += fmt.Sprintf(",sdrsaturation,%.2f", m.SDRSaturation)
-			}
-			if m.SDRMinLuminance > 0 {
-				monLine += fmt.Sprintf(",sdr_min_luminance,%.2f", m.SDRMinLuminance)
-			}
-			if m.SDRMaxLuminance > 0 {
-				monLine += fmt.Sprintf(",sdr_max_luminance,%.2f", m.SDRMaxLuminance)
-			}
-		}
-		if m.VRR > 0 {
-			monLine += fmt.Sprintf(",vrr,%d", m.VRR)
-		}
-		if m.Transform > 0 {
-			monLine += fmt.Sprintf(",transform,%d", m.Transform)
+		if isValidMonitorName(m.MirrorSource) {
+			sb.WriteString(fmt.Sprintf("  mirror = %s\n", m.MirrorSource))
 		}
 	}
 
-	return monLine
+	if m.BitDepth == 10 {
+		sb.WriteString("  bitdepth = 10\n")
+	}
+	if m.ColorMode != "" && m.ColorMode != "srgb" && isValidColorMode(m.ColorMode) {
+		sb.WriteString(fmt.Sprintf("  cm = %s\n", m.ColorMode))
+	}
+	if m.ColorMode == "hdr" || m.ColorMode == "hdredid" {
+		if m.SDRBrightness != 0 && m.SDRBrightness != 1.0 {
+			sb.WriteString(fmt.Sprintf("  sdrbrightness = %.2f\n", m.SDRBrightness))
+		}
+		if m.SDRSaturation != 0 && m.SDRSaturation != 1.0 {
+			sb.WriteString(fmt.Sprintf("  sdrsaturation = %.2f\n", m.SDRSaturation))
+		}
+		if m.SDRMinLuminance > 0 {
+			sb.WriteString(fmt.Sprintf("  sdr_min_luminance = %.2f\n", m.SDRMinLuminance))
+		}
+		if m.SDRMaxLuminance > 0 {
+			sb.WriteString(fmt.Sprintf("  sdr_max_luminance = %d\n", int(m.SDRMaxLuminance)))
+		}
+	}
+	if m.VRR > 0 {
+		sb.WriteString(fmt.Sprintf("  vrr = %d\n", m.VRR))
+	}
+	if m.Transform > 0 {
+		sb.WriteString(fmt.Sprintf("  transform = %d\n", m.Transform))
+	}
+
+	sb.WriteString("}\n")
+	return sb.String()
+}
+
+// stripMonitorDecls returns content with any top-level monitorv2 { ... } blocks
+// and any v1 monitor= / monitor = lines removed. Preserves all other content
+// including comments. Brace-balanced parser handles nested braces if any.
+func stripMonitorDecls(content string) string {
+	lines := strings.Split(content, "\n")
+	out := make([]string, 0, len(lines))
+	inBlock := false
+	depth := 0
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if !inBlock {
+			if strings.HasPrefix(trimmed, "monitorv2") && strings.Contains(trimmed, "{") {
+				inBlock = true
+				depth = strings.Count(trimmed, "{") - strings.Count(trimmed, "}")
+				if depth <= 0 {
+					inBlock = false
+				}
+				continue
+			}
+			if strings.HasPrefix(trimmed, "monitor=") || strings.HasPrefix(trimmed, "monitor ") {
+				continue
+			}
+			out = append(out, line)
+			continue
+		}
+		depth += strings.Count(line, "{") - strings.Count(line, "}")
+		if depth <= 0 {
+			inBlock = false
+		}
+	}
+	return strings.Join(out, "\n")
+}
+
+// writeOrReplaceMonitorV2 writes/replaces a single monitor's v2 block in the
+// config file, preserving other monitors' blocks and non-monitor content.
+func writeOrReplaceMonitorV2(m Monitor) error {
+	configPath := getConfigPath()
+	if configPath == "" {
+		return fmt.Errorf("could not determine config path")
+	}
+
+	existing, err := os.ReadFile(configPath)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to read config: %w", err)
+	}
+
+	stripped := rebuildWithoutOutput(string(existing), m.Name)
+	newBlock := generateMonitorV2Block(m)
+	combined := strings.TrimRight(stripped, "\n") + "\n\n" + newBlock
+
+	return os.WriteFile(configPath, []byte(combined), configFileMode)
+}
+
+// rebuildWithoutOutput returns content with the monitorv2 block whose output
+// field matches name removed, plus any legacy v1 monitor= line for the same
+// connector. Brace-balanced parser.
+func rebuildWithoutOutput(content, name string) string {
+	lines := strings.Split(content, "\n")
+	var out []string
+	i := 0
+	for i < len(lines) {
+		line := lines[i]
+		trimmed := strings.TrimSpace(line)
+
+		if strings.HasPrefix(trimmed, "monitorv2") && strings.Contains(trimmed, "{") {
+			// Gather block.
+			block := []string{line}
+			depth := strings.Count(trimmed, "{") - strings.Count(trimmed, "}")
+			j := i + 1
+			for j < len(lines) && depth > 0 {
+				block = append(block, lines[j])
+				depth += strings.Count(lines[j], "{") - strings.Count(lines[j], "}")
+				j++
+			}
+			matchesName := false
+			for _, bl := range block {
+				bt := strings.TrimSpace(bl)
+				if strings.HasPrefix(bt, "output") && strings.Contains(bt, "=") {
+					val := strings.TrimSpace(strings.SplitN(bt, "=", 2)[1])
+					if val == name {
+						matchesName = true
+						break
+					}
+				}
+			}
+			if !matchesName {
+				out = append(out, block...)
+			}
+			i = j
+			continue
+		}
+
+		if strings.HasPrefix(trimmed, "monitor=") || strings.HasPrefix(trimmed, "monitor ") {
+			rest := strings.TrimPrefix(trimmed, "monitor=")
+			rest = strings.TrimPrefix(rest, "monitor ")
+			rest = strings.TrimSpace(rest)
+			if strings.HasPrefix(rest, name+",") || strings.HasPrefix(rest, name+" ") || rest == name {
+				i++
+				continue
+			}
+		}
+
+		out = append(out, line)
+		i++
+	}
+	return strings.Join(out, "\n")
 }
 
 func writeConfig(monitors []Monitor) error {
@@ -568,55 +573,27 @@ func writeConfig(monitors []Monitor) error {
 		return fmt.Errorf("could not determine config path")
 	}
 
-	backupPath := fmt.Sprintf("%s.bak.%d", configPath, time.Now().Unix())
-
-	input, err := os.ReadFile(configPath)
-	if err != nil {
-		return fmt.Errorf("failed to read config: %w", err)
-	}
-
-	if err := os.WriteFile(backupPath, input, backupFileMode); err != nil {
-		return fmt.Errorf("failed to create backup: %w", err)
-	}
-
-	lines := strings.Split(string(input), "\n")
-	var newLines []string
-	inMonitorSection := false
-	monitorLinesWritten := false
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-
-		if strings.HasPrefix(trimmed, "monitor=") || strings.HasPrefix(trimmed, "monitor ") {
-			if !monitorLinesWritten {
-				for _, m := range monitors {
-					newLines = append(newLines, generateMonitorLine(m))
-				}
-				monitorLinesWritten = true
-			}
-			inMonitorSection = true
-			continue
-		}
-
-		if inMonitorSection && trimmed != "" && !strings.HasPrefix(trimmed, "monitor") {
-			inMonitorSection = false
-		}
-
-		if !inMonitorSection || trimmed == "" {
-			newLines = append(newLines, line)
+	input, _ := os.ReadFile(configPath)
+	if len(input) > 0 {
+		backupPath := fmt.Sprintf("%s.bak.%d", configPath, time.Now().Unix())
+		if err := os.WriteFile(backupPath, input, backupFileMode); err != nil {
+			return fmt.Errorf("failed to create backup: %w", err)
 		}
 	}
 
-	if !monitorLinesWritten {
-		newLines = append(newLines, "")
-		for _, m := range monitors {
-			newLines = append(newLines, generateMonitorLine(m))
-		}
+	stripped := stripAllMonitorDecls(string(input))
+
+	var sb strings.Builder
+	sb.WriteString(strings.TrimRight(stripped, "\n"))
+	if sb.Len() > 0 {
+		sb.WriteString("\n\n")
+	}
+	for _, m := range monitors {
+		sb.WriteString(generateMonitorV2Block(m))
+		sb.WriteString("\n")
 	}
 
-	// Open the file once to avoid TOCTOU race condition
-	// This also preserves symlinks by writing through them
-	file, err := os.OpenFile(configPath, os.O_WRONLY|os.O_TRUNC, 0)
+	file, err := os.OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, configFileMode)
 	if err != nil {
 		return fmt.Errorf("failed to open config for writing: %w", err)
 	}
@@ -626,18 +603,42 @@ func writeConfig(monitors []Monitor) error {
 		}
 	}()
 
-	// Write the new content
-	content := []byte(strings.Join(newLines, "\n"))
-	if _, err = file.Write(content); err != nil {
+	if _, err = file.Write([]byte(sb.String())); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
-
-	// Ensure data is written to disk
 	if err = file.Sync(); err != nil {
 		return fmt.Errorf("failed to sync config: %w", err)
 	}
-
 	return nil
+}
+
+// stripAllMonitorDecls removes every monitorv2 { ... } block and every
+// legacy v1 monitor= / monitor = line. Preserves non-monitor content.
+func stripAllMonitorDecls(content string) string {
+	lines := strings.Split(content, "\n")
+	var out []string
+	i := 0
+	for i < len(lines) {
+		line := lines[i]
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "monitorv2") && strings.Contains(trimmed, "{") {
+			depth := strings.Count(trimmed, "{") - strings.Count(trimmed, "}")
+			j := i + 1
+			for j < len(lines) && depth > 0 {
+				depth += strings.Count(lines[j], "{") - strings.Count(lines[j], "}")
+				j++
+			}
+			i = j
+			continue
+		}
+		if strings.HasPrefix(trimmed, "monitor=") || strings.HasPrefix(trimmed, "monitor ") {
+			i++
+			continue
+		}
+		out = append(out, line)
+		i++
+	}
+	return strings.Join(out, "\n")
 }
 
 func reloadConfig() error {
