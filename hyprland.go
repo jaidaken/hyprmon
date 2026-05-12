@@ -334,6 +334,61 @@ func parseMode(modeStr string) *Mode {
 	}
 }
 
+// buildApplyMonitorCmd returns the shell command that applyMonitor would run.
+// Exposed so the live-apply diagnostics in advanced_settings can show the
+// exact hyprctl invocation the user is issuing.
+func buildApplyMonitorCmd(m Monitor) (string, error) {
+	if !isValidMonitorName(m.Name) {
+		return "", fmt.Errorf("invalid monitor name: %s", m.Name)
+	}
+	if !isValidColorMode(m.ColorMode) {
+		return "", fmt.Errorf("invalid color mode: %s", m.ColorMode)
+	}
+
+	if !m.Active {
+		return fmt.Sprintf("hyprctl keyword monitor \"%s,disable\"", m.Name), nil
+	}
+
+	if m.IsMirrored && m.MirrorSource != "" {
+		if !isValidMonitorName(m.MirrorSource) {
+			return "", fmt.Errorf("invalid mirror source name: %s", m.MirrorSource)
+		}
+		return fmt.Sprintf("hyprctl keyword monitor \"%s,%dx%d@%.2f,%dx%d,%.2f,mirror,%s\"",
+			m.Name, m.PxW, m.PxH, m.Hz, m.X, m.Y, m.Scale, m.MirrorSource), nil
+	}
+
+	cmd := fmt.Sprintf("hyprctl keyword monitor \"%s,%dx%d@%.2f,%dx%d,%.2f",
+		m.Name, m.PxW, m.PxH, m.Hz, m.X, m.Y, m.Scale)
+	if m.BitDepth == 10 {
+		cmd += ",bitdepth,10"
+	}
+	if m.ColorMode != "" && m.ColorMode != "srgb" {
+		cmd += fmt.Sprintf(",cm,%s", m.ColorMode)
+	}
+	if m.ColorMode == "hdr" || m.ColorMode == "hdredid" {
+		if m.SDRBrightness != 0 && m.SDRBrightness != 1.0 {
+			cmd += fmt.Sprintf(",sdrbrightness,%.2f", m.SDRBrightness)
+		}
+		if m.SDRSaturation != 0 && m.SDRSaturation != 1.0 {
+			cmd += fmt.Sprintf(",sdrsaturation,%.2f", m.SDRSaturation)
+		}
+		if m.SDRMinLuminance > 0 {
+			cmd += fmt.Sprintf(",sdr_min_luminance,%.2f", m.SDRMinLuminance)
+		}
+		if m.SDRMaxLuminance > 0 {
+			cmd += fmt.Sprintf(",sdr_max_luminance,%.2f", m.SDRMaxLuminance)
+		}
+	}
+	if m.VRR > 0 {
+		cmd += fmt.Sprintf(",vrr,%d", m.VRR)
+	}
+	if m.Transform > 0 {
+		cmd += fmt.Sprintf(",transform,%d", m.Transform)
+	}
+	cmd += "\""
+	return cmd, nil
+}
+
 func applyMonitor(m Monitor) error {
 	// Validate monitor name to prevent command injection
 	if !isValidMonitorName(m.Name) {

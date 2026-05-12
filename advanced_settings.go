@@ -24,11 +24,16 @@ type liveApplyResultMsg struct {
 var liveApplyFn = applyMonitor
 
 type advancedSettingsModel struct {
-	monitor      *Monitor
-	focusedField int
-	width        int
-	height       int
-	liveApplyGen uint64
+	monitor       *Monitor
+	focusedField  int
+	width         int
+	height        int
+	liveApplyGen  uint64
+	applyOK       int
+	lastApplyAt   time.Time
+	lastApplyErr  error
+	lastApplyKind string
+	lastApplyCmd  string
 }
 
 // scheduleLiveApply bumps the generation counter and returns a debounced tick.
@@ -83,13 +88,28 @@ func (m advancedSettingsModel) Update(msg tea.Msg) (advancedSettingsModel, tea.C
 
 	case liveApplyTickMsg:
 		if msg.gen != m.liveApplyGen {
-			// superseded by a later edit
 			return m, nil
 		}
 		monCopy := *m.monitor
+		if s, err := buildApplyMonitorCmd(monCopy); err == nil {
+			m.lastApplyCmd = s
+		} else {
+			m.lastApplyCmd = "(build cmd err: " + err.Error() + ")"
+		}
 		return m, func() tea.Msg {
 			return liveApplyResultMsg{err: liveApplyFn(monCopy)}
 		}
+
+	case liveApplyResultMsg:
+		m.lastApplyAt = time.Now()
+		m.lastApplyErr = msg.err
+		if msg.err == nil {
+			m.applyOK++
+			m.lastApplyKind = "ok"
+		} else {
+			m.lastApplyKind = "err"
+		}
+		return m, nil
 
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -450,6 +470,34 @@ func (m advancedSettingsModel) View() string {
 	content.WriteString("\n")
 
 	content.WriteString("\n")
+
+	// Live-apply diagnostic strip: shows count, last apply time, last cmd, and
+	// any hyprctl error so the user can confirm tweaks are actually landing.
+	diagStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
+	errStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true)
+	okStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
+
+	var status string
+	switch m.lastApplyKind {
+	case "ok":
+		status = okStyle.Render(fmt.Sprintf("✓ applied %d  @ %s", m.applyOK, m.lastApplyAt.Format("15:04:05.000")))
+	case "err":
+		status = errStyle.Render(fmt.Sprintf("✗ ERROR @ %s: %v", m.lastApplyAt.Format("15:04:05"), m.lastApplyErr))
+	default:
+		status = diagStyle.Render("(no apply yet, tweak a slider to fire)")
+	}
+	content.WriteString(status)
+	content.WriteString("\n")
+
+	if m.lastApplyCmd != "" {
+		cmdLine := m.lastApplyCmd
+		maxLen := dlgW - 8
+		if maxLen > 10 && len(cmdLine) > maxLen {
+			cmdLine = cmdLine[:maxLen-3] + "..."
+		}
+		content.WriteString(diagStyle.Render(cmdLine))
+		content.WriteString("\n")
+	}
 
 	// Controls
 	controlsStyle := lipgloss.NewStyle().
