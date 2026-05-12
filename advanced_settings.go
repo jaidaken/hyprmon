@@ -64,7 +64,7 @@ const (
 	fieldCount
 )
 
-var sdrEOTFOptions = []string{"default", "srgb", "linear", "pq", "gamma22"}
+var sdrEOTFOptions = []string{"default", "auto", "srgb", "gamma22", "gamma22force"}
 
 const (
 	sdrMinLuminanceStep = 0.05
@@ -702,11 +702,11 @@ func (m advancedSettingsModel) renderSDREOTF() string {
 		curr = "default"
 	}
 	labels := map[string]string{
-		"default": "Default",
-		"srgb":    "sRGB",
-		"linear":  "Linear",
-		"pq":      "PQ",
-		"gamma22": "Gamma 2.2",
+		"default":      "Default",
+		"auto":         "Auto",
+		"srgb":         "sRGB",
+		"gamma22":      "Gamma 2.2",
+		"gamma22force": "Gamma 2.2 (forced)",
 	}
 	var parts []string
 	for _, key := range sdrEOTFOptions {
