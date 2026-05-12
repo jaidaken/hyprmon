@@ -53,6 +53,7 @@ func (m *advancedSettingsModel) scheduleLiveApply(delay time.Duration) tea.Cmd {
 const (
 	fieldBitDepth = iota
 	fieldColorMode
+	fieldSDREOTF
 	fieldSDRBrightness
 	fieldSDRSaturation
 	fieldSDRMinLuminance
@@ -62,6 +63,8 @@ const (
 	fieldUseDescFormat
 	fieldCount
 )
+
+var sdrEOTFOptions = []string{"default", "srgb", "linear", "pq", "gamma22"}
 
 const (
 	sdrMinLuminanceStep = 0.05
@@ -136,6 +139,12 @@ func (m advancedSettingsModel) Update(msg tea.Msg) (advancedSettingsModel, tea.C
 				return m, m.scheduleLiveApply(liveApplyDebounceToggle)
 			}
 			m.toggleValue()
+
+		case "e", "E":
+			if m.focusedField == fieldSDRMaxLuminance && m.monitor.EDIDPeakLuminance > 0 {
+				m.monitor.SDRMaxLuminance = float32(m.monitor.EDIDPeakLuminance)
+				return m, m.scheduleLiveApply(liveApplyDebounce)
+			}
 		}
 	}
 
@@ -150,7 +159,8 @@ func (m advancedSettingsModel) shouldLiveApplyToggle() bool {
 }
 
 func isHDRField(field int) bool {
-	return field == fieldSDRBrightness ||
+	return field == fieldSDREOTF ||
+		field == fieldSDRBrightness ||
 		field == fieldSDRSaturation ||
 		field == fieldSDRMinLuminance ||
 		field == fieldSDRMaxLuminance
@@ -260,6 +270,21 @@ func (m *advancedSettingsModel) toggleValue() {
 			m.focusedField = fieldColorMode
 		}
 
+	case fieldSDREOTF:
+		curr := m.monitor.SDREOTF
+		if curr == "" {
+			curr = "default"
+		}
+		idx := 0
+		for i, v := range sdrEOTFOptions {
+			if v == curr {
+				idx = i
+				break
+			}
+		}
+		idx = (idx + 1) % len(sdrEOTFOptions)
+		m.monitor.SDREOTF = sdrEOTFOptions[idx]
+
 	case fieldVRR:
 		m.monitor.VRR = (m.monitor.VRR + 1) % 3
 
@@ -366,8 +391,21 @@ func (m advancedSettingsModel) View() string {
 	}
 	content.WriteString("\n")
 
-	// SDR Brightness (only show if HDR mode)
+	// SDR EOTF + SDR sliders (only show if HDR mode)
 	if strings.Contains(m.monitor.ColorMode, "hdr") {
+		label = "SDR EOTF:"
+		value = m.renderSDREOTF()
+		if m.focusedField == fieldSDREOTF {
+			content.WriteString(focusedLabelStyle.Render(label))
+			content.WriteString("  ")
+			content.WriteString(focusedValueStyle.Render(value))
+		} else {
+			content.WriteString(labelStyle.Render(label))
+			content.WriteString("  ")
+			content.WriteString(valueStyle.Render(value))
+		}
+		content.WriteString("\n")
+
 		label = "SDR Brightness:"
 		value = m.renderSDRBrightness()
 		if m.focusedField == fieldSDRBrightness {
@@ -507,7 +545,7 @@ func (m advancedSettingsModel) View() string {
 		Foreground(lipgloss.Color("241")).
 		MarginTop(1)
 
-	controls := "[Tab/↑↓] Navigate  [Space] Toggle  [←→] Adjust\n[Enter] Apply  [Esc] Cancel"
+	controls := "[Tab/↑↓] Navigate  [Space] Toggle  [←→] Adjust  [E] EDID fill\n[Enter] Apply  [Esc] Cancel"
 	content.WriteString(controlsStyle.Render(controls))
 
 	dialog := dialogStyle.Render(content.String())
@@ -633,8 +671,12 @@ func (m advancedSettingsModel) renderSDRMinLuminance() string {
 func (m advancedSettingsModel) renderSDRMaxLuminance() string {
 	width := 20
 	value := m.monitor.SDRMaxLuminance
+	hint := ""
+	if m.monitor.EDIDPeakLuminance > 0 {
+		hint = fmt.Sprintf("  (EDID: %d, press e)", m.monitor.EDIDPeakLuminance)
+	}
 	if value <= 0 {
-		return fmt.Sprintf("[%s] (unset)", strings.Repeat("─", width))
+		return fmt.Sprintf("[%s] (unset)%s", strings.Repeat("─", width), hint)
 	}
 	pos := int((value - sdrMaxLuminanceMin) / (sdrMaxLuminanceMax - sdrMaxLuminanceMin) * float32(width))
 	if pos < 0 {
@@ -651,7 +693,30 @@ func (m advancedSettingsModel) renderSDRMaxLuminance() string {
 			slider[i] = '─'
 		}
 	}
-	return fmt.Sprintf("[%s] %.0f cd/m²", string(slider), value)
+	return fmt.Sprintf("[%s] %.0f cd/m²%s", string(slider), value, hint)
+}
+
+func (m advancedSettingsModel) renderSDREOTF() string {
+	curr := m.monitor.SDREOTF
+	if curr == "" {
+		curr = "default"
+	}
+	labels := map[string]string{
+		"default": "Default",
+		"srgb":    "sRGB",
+		"linear":  "Linear",
+		"pq":      "PQ",
+		"gamma22": "Gamma 2.2",
+	}
+	var parts []string
+	for _, key := range sdrEOTFOptions {
+		if curr == key {
+			parts = append(parts, "● "+labels[key])
+		} else {
+			parts = append(parts, "○ "+labels[key])
+		}
+	}
+	return strings.Join(parts, "  ")
 }
 
 func (m advancedSettingsModel) renderVRR() string {

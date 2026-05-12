@@ -76,6 +76,60 @@ func TestEDIDHasHDRStaticMetadataMultipleBlocks(t *testing.T) {
 	}
 }
 
+func TestEDIDPeakLuminance(t *testing.T) {
+	// Raw 0xC0 (192) -> 50 * 2^(192/32) = 50 * 64 = 3200 cd/m2
+	hdrBlock := []byte{
+		(7 << 5) | 5,
+		0x06,
+		0x03,
+		0x00,
+		0xC0,
+		0xC0,
+	}
+	edid := makeEDIDWithExt(hdrBlock)
+	got := edidPeakLuminance(edid)
+	want := 3200
+	if got < want-5 || got > want+5 {
+		t.Errorf("expected ~%d cd/m2 for raw 0xC0, got %d", want, got)
+	}
+}
+
+func TestEDIDPeakLuminanceTypicalHDR400(t *testing.T) {
+	// Raw 0x80 (128) -> 50 * 2^4 = 800 cd/m2 (HDR1000 panel)
+	hdrBlock := []byte{
+		(7 << 5) | 4,
+		0x06,
+		0x03,
+		0x00,
+		0x80,
+	}
+	edid := makeEDIDWithExt(hdrBlock)
+	got := edidPeakLuminance(edid)
+	if got != 800 {
+		t.Errorf("expected 800 cd/m2 for raw 0x80, got %d", got)
+	}
+}
+
+func TestEDIDPeakLuminanceZeroRaw(t *testing.T) {
+	hdrBlock := []byte{
+		(7 << 5) | 4,
+		0x06,
+		0x03,
+		0x00,
+		0x00,
+	}
+	edid := makeEDIDWithExt(hdrBlock)
+	if got := edidPeakLuminance(edid); got != 0 {
+		t.Errorf("raw 0 should return 0, got %d", got)
+	}
+}
+
+func TestEDIDPeakLuminanceNoBlock(t *testing.T) {
+	if got := edidPeakLuminance(make([]byte, 128)); got != 0 {
+		t.Errorf("EDID with no HDR block should return 0, got %d", got)
+	}
+}
+
 func TestColorModesForFiltering(t *testing.T) {
 	with := &Monitor{SupportsHDR: true}
 	without := &Monitor{SupportsHDR: false}

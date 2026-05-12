@@ -31,6 +31,7 @@ type Monitor struct {
 	// Advanced display settings
 	BitDepth        uint8   // 8 or 10
 	ColorMode       string  // "auto", "srgb", "wide", "edid", "hdr", "hdredid"
+	SDREOTF         string  // "" / "default" / "srgb" / "linear" / "pq" / "gamma22"
 	SDRBrightness   float32 // 1.0 default, typically 1.0-2.0
 	SDRSaturation   float32 // 1.0 default
 	SDRMinLuminance float32 // cd/m2; 0 means unset (Hyprland default)
@@ -39,9 +40,12 @@ type Monitor struct {
 	Transform       int     // 0-7 for rotation/flip
 
 	// SupportsHDR is true when the panel's EDID advertises an HDR Static
-	// Metadata Data Block. Used by the dialog to hide HDR color modes and
-	// HDR-gated sliders on panels that can't actually display HDR.
+	// Metadata Data Block.
 	SupportsHDR bool
+
+	// EDIDPeakLuminance is byte 4 of the HDR Static Metadata Data Block
+	// decoded as cd/m2. 0 when unavailable.
+	EDIDPeakLuminance int
 
 	// Primary monitor anchor: when true, normalizePositions shifts all monitors
 	// so this one sits at (0, 0). Mutually exclusive across all monitors.

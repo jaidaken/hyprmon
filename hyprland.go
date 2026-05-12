@@ -259,7 +259,8 @@ func readMonitors() ([]Monitor, error) {
 			SDRSaturation:   float32(hm.SDRSaturation),
 			SDRMinLuminance: float32(hm.SDRMinLuminance),
 			SDRMaxLuminance: float32(hm.SDRMaxLuminance),
-			SupportsHDR:     monitorSupportsHDR(hm.Name),
+			SupportsHDR:       monitorSupportsHDR(hm.Name),
+			EDIDPeakLuminance: monitorEDIDPeakLuminance(hm.Name),
 
 			// Mirror settings
 			IsMirrored: hm.MirrorOf != "" && hm.MirrorOf != "none",
@@ -451,6 +452,9 @@ func generateMonitorV2Block(m Monitor) string {
 		sb.WriteString(fmt.Sprintf("  cm = %s\n", m.ColorMode))
 	}
 	if m.ColorMode == "hdr" || m.ColorMode == "hdredid" {
+		if m.SDREOTF != "" && m.SDREOTF != "default" {
+			sb.WriteString(fmt.Sprintf("  sdr_eotf = %s\n", m.SDREOTF))
+		}
 		if m.SDRBrightness != 0 && m.SDRBrightness != 1.0 {
 			sb.WriteString(fmt.Sprintf("  sdrbrightness = %.2f\n", m.SDRBrightness))
 		}
