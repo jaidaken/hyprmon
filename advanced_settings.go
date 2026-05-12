@@ -9,7 +9,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const liveApplyDebounce = 150 * time.Millisecond
+const (
+	liveApplyDebounce       = 150 * time.Millisecond
+	liveApplyDebounceToggle = 750 * time.Millisecond
+)
 
 type liveApplyTickMsg struct {
 	gen uint64
@@ -36,13 +39,13 @@ type advancedSettingsModel struct {
 	lastApplyCmd  string
 }
 
-// scheduleLiveApply bumps the generation counter and returns a debounced tick.
-// When the tick fires, Update compares its captured gen against the current
-// counter; if a later edit superseded it, the tick is dropped.
-func (m *advancedSettingsModel) scheduleLiveApply() tea.Cmd {
+// scheduleLiveApply bumps the gen counter and returns a debounced tick. Caller
+// picks the delay: short for slider arrows, long for toggles so the user can
+// cycle through several values before any apply fires.
+func (m *advancedSettingsModel) scheduleLiveApply(delay time.Duration) tea.Cmd {
 	m.liveApplyGen++
 	gen := m.liveApplyGen
-	return tea.Tick(liveApplyDebounce, func(time.Time) tea.Msg {
+	return tea.Tick(delay, func(time.Time) tea.Msg {
 		return liveApplyTickMsg{gen: gen}
 	})
 }
@@ -121,16 +124,16 @@ func (m advancedSettingsModel) Update(msg tea.Msg) (advancedSettingsModel, tea.C
 
 		case "left":
 			m.adjustValue(-1)
-			return m, m.scheduleLiveApply()
+			return m, m.scheduleLiveApply(liveApplyDebounce)
 
 		case "right":
 			m.adjustValue(1)
-			return m, m.scheduleLiveApply()
+			return m, m.scheduleLiveApply(liveApplyDebounce)
 
 		case " ", "space":
 			if m.shouldLiveApplyToggle() {
 				m.toggleValue()
-				return m, m.scheduleLiveApply()
+				return m, m.scheduleLiveApply(liveApplyDebounceToggle)
 			}
 			m.toggleValue()
 		}

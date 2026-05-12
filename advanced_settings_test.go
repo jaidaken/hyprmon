@@ -41,13 +41,13 @@ func TestScheduleLiveApplyIncrementsGen(t *testing.T) {
 		t.Fatalf("expected initial gen 0, got %d", dlg.liveApplyGen)
 	}
 
-	_ = dlg.scheduleLiveApply()
+	_ = dlg.scheduleLiveApply(liveApplyDebounce)
 	if dlg.liveApplyGen != 1 {
 		t.Errorf("expected gen 1 after first schedule, got %d", dlg.liveApplyGen)
 	}
 
-	_ = dlg.scheduleLiveApply()
-	_ = dlg.scheduleLiveApply()
+	_ = dlg.scheduleLiveApply(liveApplyDebounce)
+	_ = dlg.scheduleLiveApply(liveApplyDebounceToggle)
 	if dlg.liveApplyGen != 3 {
 		t.Errorf("expected gen 3 after three schedules, got %d", dlg.liveApplyGen)
 	}
