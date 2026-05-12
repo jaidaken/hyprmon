@@ -264,12 +264,30 @@ func (m advancedSettingsModel) View() string {
 		m.height = 20
 	}
 
+	// Auto-size to terminal with sensible bounds. Min width fits the slider
+	// row "[20-char slider] 9999.00 cd/m²" plus the 16-char label and border
+	// padding; min height fits the HDR-mode field count plus chrome.
+	dlgW := m.width - 8
+	if dlgW < 60 {
+		dlgW = 60
+	}
+	if dlgW > 120 {
+		dlgW = 120
+	}
+	dlgH := m.height - 4
+	if dlgH < 20 {
+		dlgH = 20
+	}
+	if dlgH > 36 {
+		dlgH = 36
+	}
+
 	dialogStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("42")).
 		Padding(1, 2).
-		Width(56).
-		Height(19)
+		Width(dlgW).
+		Height(dlgH)
 
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).

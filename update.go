@@ -579,6 +579,8 @@ func (m model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				mon.SDRSaturation = 1.0
 			}
 			m.AdvancedSettings = newAdvancedSettingsModel(mon)
+			m.AdvancedSettings.width = int(m.World.TermW)
+			m.AdvancedSettings.height = int(m.World.TermH)
 			m.ShowAdvancedSettings = true
 		}
 
