@@ -186,11 +186,16 @@ type hyprMonitor struct {
 	Focused         bool     `json:"focused"`
 	DpmsStatus      bool     `json:"dpmsStatus"`
 	VRR             bool     `json:"vrr"`
-	ActivelyTearing bool     `json:"activelyTearing"`
-	Disabled        bool     `json:"disabled"`
-	CurrentFormat   string   `json:"currentFormat"`
-	MirrorOf        string   `json:"mirrorOf"`
-	AvailableModes  []string `json:"availableModes"`
+	ActivelyTearing        bool     `json:"activelyTearing"`
+	Disabled               bool     `json:"disabled"`
+	CurrentFormat          string   `json:"currentFormat"`
+	MirrorOf               string   `json:"mirrorOf"`
+	AvailableModes         []string `json:"availableModes"`
+	ColorManagementPreset  string   `json:"colorManagementPreset"`
+	SDRBrightness          float64  `json:"sdrBrightness"`
+	SDRSaturation          float64  `json:"sdrSaturation"`
+	SDRMinLuminance        float64  `json:"sdrMinLuminance"`
+	SDRMaxLuminance        float64  `json:"sdrMaxLuminance"`
 }
 
 type hyprWorkspace struct {
@@ -243,6 +248,17 @@ func readMonitors() ([]Monitor, error) {
 				}
 				return 0
 			}(),
+			BitDepth: func() uint8 {
+				if strings.Contains(hm.CurrentFormat, "2101010") || strings.Contains(hm.CurrentFormat, "16161616") {
+					return 10
+				}
+				return 8
+			}(),
+			ColorMode:       hm.ColorManagementPreset,
+			SDRBrightness:   float32(hm.SDRBrightness),
+			SDRSaturation:   float32(hm.SDRSaturation),
+			SDRMinLuminance: float32(hm.SDRMinLuminance),
+			SDRMaxLuminance: float32(hm.SDRMaxLuminance),
 
 			// Mirror settings
 			IsMirrored: hm.MirrorOf != "" && hm.MirrorOf != "none",
