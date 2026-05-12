@@ -201,8 +201,8 @@ func (m *advancedSettingsModel) adjustValue(delta int) {
 		if m.monitor.SDRBrightness < 0.5 {
 			m.monitor.SDRBrightness = 0.5
 		}
-		if m.monitor.SDRBrightness > 2.0 {
-			m.monitor.SDRBrightness = 2.0
+		if m.monitor.SDRBrightness > 3.0 {
+			m.monitor.SDRBrightness = 3.0
 		}
 
 	case fieldSDRSaturation:
@@ -210,8 +210,8 @@ func (m *advancedSettingsModel) adjustValue(delta int) {
 		if m.monitor.SDRSaturation < 0.5 {
 			m.monitor.SDRSaturation = 0.5
 		}
-		if m.monitor.SDRSaturation > 1.5 {
-			m.monitor.SDRSaturation = 1.5
+		if m.monitor.SDRSaturation > 3.0 {
+			m.monitor.SDRSaturation = 3.0
 		}
 
 	case fieldSDRMinLuminance:
@@ -551,7 +551,7 @@ func (m advancedSettingsModel) renderSDRBrightness() string {
 	if value == 0 {
 		value = 1.0 // Default
 	}
-	pos := int((value - 0.5) / 1.5 * float32(width))
+	pos := int((value - 0.5) / 2.5 * float32(width))
 	if pos < 0 {
 		pos = 0
 	}
@@ -577,7 +577,7 @@ func (m advancedSettingsModel) renderSDRSaturation() string {
 	if value == 0 {
 		value = 1.0 // Default
 	}
-	pos := int((value - 0.5) / 1.0 * float32(width))
+	pos := int((value - 0.5) / 2.5 * float32(width))
 	if pos < 0 {
 		pos = 0
 	}
