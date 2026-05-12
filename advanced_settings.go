@@ -332,29 +332,29 @@ func (m advancedSettingsModel) View() string {
 
 	dialogStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("42")).
+		BorderForeground(fgAccent).
 		Padding(1, 2).
 		Width(dlgW).
 		Height(dlgH)
 
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("214")).
+		Foreground(fgPrimary).
 		MarginBottom(1)
 
 	labelStyle := lipgloss.NewStyle().
 		Width(16).
-		Foreground(lipgloss.Color("244"))
+		Foreground(fgMuted)
 
 	focusedLabelStyle := labelStyle.
-		Foreground(lipgloss.Color("214")).
+		Foreground(fgPrimary).
 		Bold(true)
 
 	valueStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("42"))
+		Foreground(fgAccent)
 
 	focusedValueStyle := valueStyle.
-		Foreground(lipgloss.Color("214")).
+		Foreground(fgPrimary).
 		Bold(true)
 
 	var content strings.Builder
@@ -494,8 +494,8 @@ func (m advancedSettingsModel) View() string {
 	label = "Write as desc:"
 	value, disabled := m.renderUseDescFormat()
 	if disabled {
-		dimLabelStyle := labelStyle.Foreground(lipgloss.Color("238"))
-		dimValueStyle := valueStyle.Foreground(lipgloss.Color("238"))
+		dimLabelStyle := labelStyle.Foreground(fgDisabled)
+		dimValueStyle := valueStyle.Foreground(fgDisabled)
 		content.WriteString(dimLabelStyle.Render(label))
 		content.WriteString("  ")
 		content.WriteString(dimValueStyle.Render(value))
@@ -514,9 +514,9 @@ func (m advancedSettingsModel) View() string {
 
 	// Live-apply diagnostic strip: shows count, last apply time, last cmd, and
 	// any hyprctl error so the user can confirm tweaks are actually landing.
-	diagStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
-	errStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true)
-	okStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
+	diagStyle := lipgloss.NewStyle().Foreground(fgMuted)
+	errStyle := lipgloss.NewStyle().Foreground(fgError).Bold(true)
+	okStyle := lipgloss.NewStyle().Foreground(fgAccent)
 
 	var status string
 	switch m.lastApplyKind {
@@ -542,7 +542,7 @@ func (m advancedSettingsModel) View() string {
 
 	// Controls
 	controlsStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241")).
+		Foreground(fgDim).
 		MarginTop(1)
 
 	controls := "[Tab/↑↓] Navigate  [Space] Toggle  [←→] Adjust  [E] EDID fill\n[Enter] Apply  [Esc] Cancel"

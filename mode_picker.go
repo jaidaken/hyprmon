@@ -164,7 +164,7 @@ func (m modePickerModel) View() string {
 
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("12")).
+		Foreground(fgTitle).
 		MarginBottom(1)
 
 	s.WriteString(titleStyle.Render(fmt.Sprintf("Select Resolution & Refresh Rate for %s", m.monitor)))
@@ -175,14 +175,14 @@ func (m modePickerModel) View() string {
 
 	selectedStyle := lipgloss.NewStyle().
 		PaddingLeft(1).
-		Foreground(lipgloss.Color("214")).
+		Foreground(fgPrimary).
 		Bold(true)
 
 	currentStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("42"))
+		Foreground(fgAccent)
 
 	recommendedStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("33")).
+		Foreground(fgRecommend).
 		Italic(true)
 
 	for i, mode := range m.modes {
@@ -232,7 +232,7 @@ func (m modePickerModel) View() string {
 	s.WriteString("\n")
 
 	helpStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241"))
+		Foreground(fgDim)
 
 	help := "↑/↓: Navigate  •  Enter: Select  •  1: 1080p  •  4: 4K  •  Esc: Cancel"
 	s.WriteString(helpStyle.Render(help))
@@ -240,7 +240,7 @@ func (m modePickerModel) View() string {
 	// Add preview of selected mode
 	s.WriteString("\n\n")
 	previewStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("245")).
+		Foreground(fgPreview).
 		Italic(true)
 
 	selectedMode := m.modes[m.selected]

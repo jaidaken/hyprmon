@@ -698,21 +698,21 @@ func (m profileMenuModel) renderHelp() string {
 	helpStyle := lipgloss.NewStyle().
 		Padding(2, 4).
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("214"))
+		BorderForeground(fgPrimary)
 
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("214")).
+		Foreground(fgPrimary).
 		MarginBottom(1)
 
 	sectionStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("42")).
+		Foreground(fgAccent).
 		MarginTop(1).
 		MarginBottom(1)
 
 	keyStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("214")).
+		Foreground(fgPrimary).
 		Width(20)
 
 	var content strings.Builder
@@ -776,7 +776,7 @@ func (m profileMenuModel) renderHelp() string {
 	content.WriteString("• [Open Full UI]: Launch the main HyprMon interface\n")
 
 	content.WriteString("\n")
-	content.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render("Press any key to close help"))
+	content.WriteString(lipgloss.NewStyle().Foreground(fgDim).Render("Press any key to close help"))
 
 	return helpStyle.Render(content.String())
 }
@@ -791,7 +791,7 @@ func (m profileMenuModel) View() string {
 
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("12")).
+		Foreground(fgTitle).
 		MarginBottom(1)
 
 	s.WriteString(titleStyle.Render("HyprMon - Profile Selection"))
@@ -799,7 +799,7 @@ func (m profileMenuModel) View() string {
 
 	if m.err != nil {
 		errStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("9"))
+			Foreground(fgErrorAlt)
 		s.WriteString(errStyle.Render(fmt.Sprintf("Error: %v", m.err)))
 		s.WriteString("\n\n")
 	}
@@ -808,14 +808,14 @@ func (m profileMenuModel) View() string {
 	if m.renaming {
 		renameStyle := lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("42")).
+			BorderForeground(fgAccent).
 			Padding(1, 2).
 			MarginTop(1).
 			MarginBottom(1)
 
 		inputStyle := lipgloss.NewStyle().
 			Border(lipgloss.NormalBorder()).
-			BorderForeground(lipgloss.Color("214")).
+			BorderForeground(fgPrimary).
 			Padding(0, 1)
 
 		// Build input with cursor
@@ -832,7 +832,7 @@ func (m profileMenuModel) View() string {
 	if m.confirmDelete {
 		confirmStyle := lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("9")).
+			BorderForeground(fgErrorAlt).
 			Padding(1, 2).
 			MarginTop(1).
 			MarginBottom(1)
@@ -851,14 +851,14 @@ func (m profileMenuModel) View() string {
 
 	selectedStyle := lipgloss.NewStyle().
 		PaddingLeft(1).
-		Foreground(lipgloss.Color("214")).
+		Foreground(fgPrimary).
 		Bold(true)
 
 	for i, profile := range m.profiles {
 		if strings.HasPrefix(profile, "─") {
 			// Render separator
 			sepStyle := lipgloss.NewStyle().
-				Foreground(lipgloss.Color("238"))
+				Foreground(fgDisabled)
 			s.WriteString(sepStyle.Render(profile))
 		} else if i == m.selected {
 			displayName := profile
@@ -949,7 +949,7 @@ func (m profileMenuModel) renderFooter() string {
 	}
 
 	helpStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241"))
+		Foreground(fgDim)
 
 	return helpStyle.Render(footerText)
 }
@@ -1041,7 +1041,7 @@ func (m profileMenuModel) renderMultiLineFooter(commands []profileKeyCommand, wi
 	}
 
 	helpStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241"))
+		Foreground(fgDim)
 
 	return helpStyle.Render(strings.Join(lines, "\n"))
 }

@@ -154,7 +154,7 @@ func (m scalePickerModel) View() string {
 
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("12")).
+		Foreground(fgTitle).
 		MarginBottom(1)
 
 	s.WriteString(titleStyle.Render(fmt.Sprintf("Select Scale for %s", m.monitor)))
@@ -174,14 +174,14 @@ func (m scalePickerModel) View() string {
 
 	selectedStyle := lipgloss.NewStyle().
 		PaddingLeft(1).
-		Foreground(lipgloss.Color("214")).
+		Foreground(fgPrimary).
 		Bold(true)
 
 	currentStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("42"))
+		Foreground(fgAccent)
 
 	recommendedStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("33")).
+		Foreground(fgRecommend).
 		Italic(true)
 
 	for i, scale := range m.scales {
@@ -228,7 +228,7 @@ func (m scalePickerModel) View() string {
 	s.WriteString("\n")
 
 	helpStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241"))
+		Foreground(fgDim)
 
 	help := "↑/↓: Navigate  •  Enter: Select  •  c: Custom  •  1: 1.00x  •  2: 2.00x  •  Esc: Cancel"
 	s.WriteString(helpStyle.Render(help))
@@ -236,7 +236,7 @@ func (m scalePickerModel) View() string {
 	// Add preview of what the scale means
 	s.WriteString("\n\n")
 	previewStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("245")).
+		Foreground(fgPreview).
 		Italic(true)
 
 	selectedScale := m.scales[m.selected]

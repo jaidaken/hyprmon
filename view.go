@@ -10,42 +10,42 @@ import (
 var (
 	headerStyle = lipgloss.NewStyle().
 			Bold(true).
-			Foreground(lipgloss.Color("12")).
+			Foreground(fgTitle).
 			MarginBottom(1)
 
 	footerStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("241")).
+			Foreground(fgDim).
 			MarginTop(1)
 
 	statusStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("214")).
+			Foreground(fgPrimary).
 			Bold(true)
 
 	monitorBoxActive = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color("42")).
-				Foreground(lipgloss.Color("42"))
+				BorderForeground(fgAccent).
+				Foreground(fgAccent)
 
 	monitorBoxInactive = lipgloss.NewStyle().
 				Border(lipgloss.RoundedBorder()).
-				BorderForeground(lipgloss.Color("244")).
-				Foreground(lipgloss.Color("244"))
+				BorderForeground(fgMuted).
+				Foreground(fgMuted)
 
 	monitorBoxSelected = lipgloss.NewStyle().
 				Border(lipgloss.DoubleBorder()).
-				BorderForeground(lipgloss.Color("214")).
-				Foreground(lipgloss.Color("214"))
+				BorderForeground(fgPrimary).
+				Foreground(fgPrimary)
 
 	desktopStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("240"))
+			BorderForeground(fgBorder)
 )
 
 // dialogBoxStyle is the shared bordered container used by pickers so every
 // overlay has matching chrome.
 var dialogBoxStyle = lipgloss.NewStyle().
 	Border(lipgloss.RoundedBorder()).
-	BorderForeground(lipgloss.Color("42")).
+	BorderForeground(fgAccent).
 	Padding(1, 2)
 
 // wrapDialog applies the shared border style to a picker's content.
@@ -135,17 +135,17 @@ func (m model) renderHelp() string {
 
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("214")).
+		Foreground(fgPrimary).
 		MarginBottom(1)
 
 	sectionStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("42")).
+		Foreground(fgAccent).
 		MarginTop(1).
 		MarginBottom(1)
 
 	keyStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("214")).
+		Foreground(fgPrimary).
 		Width(20)
 
 	// Build all content lines
@@ -257,12 +257,12 @@ func (m model) renderHelp() string {
 			min(scrollOffset+contentHeight, totalLines),
 			totalLines)
 		visibleLines = append(visibleLines, lipgloss.NewStyle().
-			Foreground(lipgloss.Color("241")).
+			Foreground(fgDim).
 			Render(footerText))
 	} else {
 		// Just show close instruction if no scrolling needed
 		visibleLines = append(visibleLines, lipgloss.NewStyle().
-			Foreground(lipgloss.Color("241")).
+			Foreground(fgDim).
 			Render("ESC or q to close"))
 	}
 
@@ -273,7 +273,7 @@ func (m model) renderHelp() string {
 	helpStyle := lipgloss.NewStyle().
 		Padding(0, 2).
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("214")).
+		BorderForeground(fgPrimary).
 		Width(viewportWidth).
 		Height(viewportHeight).
 		MarginTop(1) // Add top margin to prevent cutoff

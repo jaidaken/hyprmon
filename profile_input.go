@@ -143,7 +143,7 @@ func (m profileInputModel) View() string {
 
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
-		Foreground(lipgloss.Color("12")).
+		Foreground(fgTitle).
 		MarginBottom(1)
 
 	if m.confirmOverride {
@@ -151,7 +151,7 @@ func (m profileInputModel) View() string {
 		s.WriteString("\n\n")
 
 		warningStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("214"))
+			Foreground(fgPrimary)
 
 		s.WriteString(warningStyle.Render(fmt.Sprintf("Profile '%s' already exists.", m.existingName)))
 		s.WriteString("\n")
@@ -164,7 +164,7 @@ func (m profileInputModel) View() string {
 	s.WriteString("\n\n")
 
 	labelStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("245"))
+		Foreground(fgPreview)
 
 	s.WriteString(labelStyle.Render("Enter profile name:"))
 	s.WriteString("\n\n")
@@ -172,7 +172,7 @@ func (m profileInputModel) View() string {
 	// Input field
 	inputStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("240")).
+		BorderForeground(fgBorder).
 		Padding(0, 1).
 		Width(40)
 
@@ -190,7 +190,7 @@ func (m profileInputModel) View() string {
 	// Show error if any
 	if m.error != "" {
 		errorStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("9"))
+			Foreground(fgErrorAlt)
 		s.WriteString(errorStyle.Render("⚠ " + m.error))
 		s.WriteString("\n\n")
 	}
@@ -202,7 +202,7 @@ func (m profileInputModel) View() string {
 		s.WriteString("\n")
 
 		listStyle := lipgloss.NewStyle().
-			Foreground(lipgloss.Color("243")).
+			Foreground(fgListItem).
 			PaddingLeft(2)
 
 		for _, profile := range existingProfiles {
@@ -214,7 +214,7 @@ func (m profileInputModel) View() string {
 
 	// Help text
 	helpStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241"))
+		Foreground(fgDim)
 
 	help := "Enter: Save  •  Esc: Cancel  •  Ctrl+U/K: Clear"
 	s.WriteString(helpStyle.Render(help))
@@ -222,7 +222,7 @@ func (m profileInputModel) View() string {
 	// Suggestions
 	s.WriteString("\n\n")
 	suggestionStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("243")).
+		Foreground(fgListItem).
 		Italic(true)
 
 	s.WriteString(suggestionStyle.Render("Suggestions: home, work, laptop, presentation, gaming"))

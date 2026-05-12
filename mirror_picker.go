@@ -171,14 +171,14 @@ func (m mirrorPickerModel) View() string {
 	var b strings.Builder
 
 	title := fmt.Sprintf("Mirror Configuration for %s", m.currentMonitor)
-	b.WriteString(lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("12")).Render(title))
+	b.WriteString(lipgloss.NewStyle().Bold(true).Foreground(fgTitle).Render(title))
 	b.WriteString("\n\n")
 
 	if len(m.availableMonitors) == 1 {
 		b.WriteString("No monitors available for mirroring.\n")
 		b.WriteString("(Only active, non-mirrored monitors can be mirror sources)\n\n")
 
-		warningStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("208"))
+		warningStyle := lipgloss.NewStyle().Foreground(fgWarning)
 		b.WriteString(warningStyle.Render("Note: Circular mirroring is not allowed"))
 		b.WriteString("\n\n")
 
@@ -199,11 +199,11 @@ func (m mirrorPickerModel) View() string {
 
 		style := lipgloss.NewStyle()
 		if i == m.selected {
-			style = style.Bold(true).Foreground(lipgloss.Color("214"))
+			style = style.Bold(true).Foreground(fgPrimary)
 		} else if monitor == "None" {
-			style = style.Foreground(lipgloss.Color("244"))
+			style = style.Foreground(fgMuted)
 		} else {
-			style = style.Foreground(lipgloss.Color("42"))
+			style = style.Foreground(fgAccent)
 		}
 
 		line := prefix + monitor + suffix
@@ -222,7 +222,7 @@ func (m mirrorPickerModel) View() string {
 
 	// Add warning about resolution mismatches if applicable
 	if len(m.availableMonitors) > 1 {
-		warningStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("208"))
+		warningStyle := lipgloss.NewStyle().Foreground(fgWarning)
 		b.WriteString(warningStyle.Render("Warning: mirroring monitors with different resolutions may cause stretching"))
 		b.WriteString("\n")
 	}
