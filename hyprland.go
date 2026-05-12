@@ -425,6 +425,9 @@ func generateMonitorV2Block(m Monitor) string {
 		}
 	}
 
+	// Emit every field unconditionally: hyprlang only updates an attribute
+	// when m_bSetByUser is true on parse, so omission persists previous values
+	// across reloads (transform stays rotated, vrr stays on, etc.).
 	var sb strings.Builder
 	sb.WriteString("monitorv2 {\n")
 	sb.WriteString(fmt.Sprintf("  output = %s\n", identifier))
@@ -435,19 +438,17 @@ func generateMonitorV2Block(m Monitor) string {
 		return sb.String()
 	}
 
+	sb.WriteString("  disabled = 0\n")
 	sb.WriteString(fmt.Sprintf("  mode = %dx%d@%.2f\n", m.PxW, m.PxH, m.Hz))
 	sb.WriteString(fmt.Sprintf("  position = %dx%d\n", m.X, m.Y))
 	sb.WriteString(fmt.Sprintf("  scale = %.2f\n", m.Scale))
 
-	if m.IsMirrored && m.MirrorSource != "" {
-		if isValidMonitorName(m.MirrorSource) {
-			sb.WriteString(fmt.Sprintf("  mirror = %s\n", m.MirrorSource))
-		}
+	if m.IsMirrored && m.MirrorSource != "" && isValidMonitorName(m.MirrorSource) {
+		sb.WriteString(fmt.Sprintf("  mirror = %s\n", m.MirrorSource))
+	} else {
+		sb.WriteString("  mirror = none\n")
 	}
 
-	// Always emit user-set values, even at defaults. Hyprland's hyprlang only
-	// updates an attribute when m_bSetByUser is true; omitting a line leaves
-	// the previously-set value in place (going 0.9 -> 1.0 stays at 0.9).
 	if m.BitDepth == 10 || m.BitDepth == 8 {
 		sb.WriteString(fmt.Sprintf("  bitdepth = %d\n", m.BitDepth))
 	}
@@ -471,12 +472,8 @@ func generateMonitorV2Block(m Monitor) string {
 			sb.WriteString(fmt.Sprintf("  sdr_max_luminance = %d\n", int(m.SDRMaxLuminance)))
 		}
 	}
-	if m.VRR > 0 {
-		sb.WriteString(fmt.Sprintf("  vrr = %d\n", m.VRR))
-	}
-	if m.Transform > 0 {
-		sb.WriteString(fmt.Sprintf("  transform = %d\n", m.Transform))
-	}
+	sb.WriteString(fmt.Sprintf("  vrr = %d\n", m.VRR))
+	sb.WriteString(fmt.Sprintf("  transform = %d\n", m.Transform))
 
 	sb.WriteString("}\n")
 	return sb.String()
