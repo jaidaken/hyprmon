@@ -445,20 +445,23 @@ func generateMonitorV2Block(m Monitor) string {
 		}
 	}
 
-	if m.BitDepth == 10 {
-		sb.WriteString("  bitdepth = 10\n")
+	// Always emit user-set values, even at defaults. Hyprland's hyprlang only
+	// updates an attribute when m_bSetByUser is true; omitting a line leaves
+	// the previously-set value in place (going 0.9 -> 1.0 stays at 0.9).
+	if m.BitDepth == 10 || m.BitDepth == 8 {
+		sb.WriteString(fmt.Sprintf("  bitdepth = %d\n", m.BitDepth))
 	}
-	if m.ColorMode != "" && m.ColorMode != "srgb" && isValidColorMode(m.ColorMode) {
+	if m.ColorMode != "" && isValidColorMode(m.ColorMode) {
 		sb.WriteString(fmt.Sprintf("  cm = %s\n", m.ColorMode))
 	}
 	if m.ColorMode == "hdr" || m.ColorMode == "hdredid" {
-		if m.SDREOTF != "" && m.SDREOTF != "default" {
+		if m.SDREOTF != "" {
 			sb.WriteString(fmt.Sprintf("  sdr_eotf = %s\n", m.SDREOTF))
 		}
-		if m.SDRBrightness != 0 && m.SDRBrightness != 1.0 {
+		if m.SDRBrightness > 0 {
 			sb.WriteString(fmt.Sprintf("  sdrbrightness = %.2f\n", m.SDRBrightness))
 		}
-		if m.SDRSaturation != 0 && m.SDRSaturation != 1.0 {
+		if m.SDRSaturation > 0 {
 			sb.WriteString(fmt.Sprintf("  sdrsaturation = %.2f\n", m.SDRSaturation))
 		}
 		if m.SDRMinLuminance > 0 {
