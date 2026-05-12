@@ -141,24 +141,41 @@ func (m *model) updateWorld() {
 		return
 	}
 
-	var maxX, maxY int32
+	// Bounds must cover negative coordinates too: a monitor at X=-1480 (e.g.
+	// portrait panel left of an anchored primary) would otherwise render off
+	// the left edge of the canvas with no room to drag.
+	first := true
+	var minX, minY, maxX, maxY int32
 	for _, mon := range m.Monitors {
-		// Use scaled dimensions for world bounds
 		scaledWidth := int32(float32(mon.PxW) / mon.Scale)
 		scaledHeight := int32(float32(mon.PxH) / mon.Scale)
-
-		if mon.X+scaledWidth > maxX {
-			maxX = mon.X + scaledWidth
+		mx2 := mon.X + scaledWidth
+		my2 := mon.Y + scaledHeight
+		if first {
+			minX, minY, maxX, maxY = mon.X, mon.Y, mx2, my2
+			first = false
+			continue
 		}
-		if mon.Y+scaledHeight > maxY {
-			maxY = mon.Y + scaledHeight
+		if mon.X < minX {
+			minX = mon.X
+		}
+		if mon.Y < minY {
+			minY = mon.Y
+		}
+		if mx2 > maxX {
+			maxX = mx2
+		}
+		if my2 > maxY {
+			maxY = my2
 		}
 	}
 
 	m.World = world{
-		Width:  maxX + worldPaddingPx,
-		Height: maxY + worldPaddingPx,
-		Scale:  defaultWorldScale,
+		Width:   (maxX - minX) + 2*worldPaddingPx,
+		Height:  (maxY - minY) + 2*worldPaddingPx,
+		OffsetX: minX - worldPaddingPx,
+		OffsetY: minY - worldPaddingPx,
+		Scale:   defaultWorldScale,
 	}
 }
 

@@ -139,6 +139,42 @@ func TestClearPrimaryPref(t *testing.T) {
 	}
 }
 
+func TestUpdateWorldHandlesNegativeCoords(t *testing.T) {
+	m := model{Monitors: []Monitor{
+		{Name: "DP-1", X: 0, Y: 0, PxW: 2560, PxH: 1440, Scale: 1, Active: true, IsPrimary: true},
+		{Name: "HDMI-A-1", X: -1480, Y: -328, PxW: 1440, PxH: 2560, Scale: 1, Active: true},
+	}}
+	m.updateWorld()
+
+	if m.World.OffsetX != -1480-worldPaddingPx {
+		t.Errorf("OffsetX = %d, want %d", m.World.OffsetX, -1480-worldPaddingPx)
+	}
+	if m.World.OffsetY != -328-worldPaddingPx {
+		t.Errorf("OffsetY = %d, want %d", m.World.OffsetY, -328-worldPaddingPx)
+	}
+	if m.World.Width != 2560-(-1480)+2*worldPaddingPx {
+		t.Errorf("Width = %d, want %d", m.World.Width, 2560-(-1480)+2*worldPaddingPx)
+	}
+	if m.World.Height != 2232-(-328)+2*worldPaddingPx {
+		t.Errorf("Height = %d, want %d", m.World.Height, 2232-(-328)+2*worldPaddingPx)
+	}
+}
+
+func TestUpdateWorldPositiveOnlyUnchanged(t *testing.T) {
+	m := model{Monitors: []Monitor{
+		{Name: "DP-1", X: 0, Y: 0, PxW: 2560, PxH: 1440, Scale: 1, Active: true},
+		{Name: "HDMI-A-1", X: 2560, Y: 0, PxW: 1920, PxH: 1080, Scale: 1, Active: true},
+	}}
+	m.updateWorld()
+
+	if m.World.OffsetX != 0-worldPaddingPx {
+		t.Errorf("OffsetX = %d, want %d", m.World.OffsetX, -worldPaddingPx)
+	}
+	if m.World.Width != 4480+2*worldPaddingPx {
+		t.Errorf("Width = %d, want %d", m.World.Width, 4480+2*worldPaddingPx)
+	}
+}
+
 func TestApplyMonitorPrefsLoadsPrimary(t *testing.T) {
 	monitors := []Monitor{
 		{Name: "DP-1", HardwareID: "make/model/serial-A"},
