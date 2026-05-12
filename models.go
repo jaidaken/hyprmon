@@ -29,12 +29,14 @@ type Monitor struct {
 	Modes         []Mode
 
 	// Advanced display settings
-	BitDepth      uint8   // 8 or 10
-	ColorMode     string  // "auto", "srgb", "wide", "edid", "hdr", "hdredid"
-	SDRBrightness float32 // 1.0 default, typically 1.0-2.0
-	SDRSaturation float32 // 1.0 default
-	VRR           int     // 0=off, 1=on, 2=fullscreen-only
-	Transform     int     // 0-7 for rotation/flip
+	BitDepth        uint8   // 8 or 10
+	ColorMode       string  // "auto", "srgb", "wide", "edid", "hdr", "hdredid"
+	SDRBrightness   float32 // 1.0 default, typically 1.0-2.0
+	SDRSaturation   float32 // 1.0 default
+	SDRMinLuminance float32 // cd/m2; 0 means unset (Hyprland default)
+	SDRMaxLuminance float32 // cd/m2; 0 means unset (Hyprland default)
+	VRR             int     // 0=off, 1=on, 2=fullscreen-only
+	Transform       int     // 0-7 for rotation/flip
 
 	// Mirror settings
 	IsMirrored    bool     // Whether this monitor is mirroring another

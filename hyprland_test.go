@@ -194,6 +194,65 @@ func TestGenerateMonitorLineDescFormat(t *testing.T) {
 	})
 }
 
+func TestGenerateMonitorLineLuminance(t *testing.T) {
+	base := Monitor{
+		Name:      "DP-1",
+		PxW:       2560,
+		PxH:       1440,
+		Hz:        74.93,
+		X:         0,
+		Y:         0,
+		Scale:     1.0,
+		Active:    true,
+		BitDepth:  10,
+		ColorMode: "hdredid",
+	}
+
+	t.Run("both luminance values emit", func(t *testing.T) {
+		m := base
+		m.SDRBrightness = 2.0
+		m.SDRSaturation = 1.2
+		m.SDRMinLuminance = 0.1
+		m.SDRMaxLuminance = 20
+		got := generateMonitorLine(m)
+		want := "monitor=DP-1,2560x1440@74.93,0x0,1.00,bitdepth,10,cm,hdredid,sdrbrightness,2.00,sdrsaturation,1.20,sdr_min_luminance,0.10,sdr_max_luminance,20.00"
+		if got != want {
+			t.Errorf("generateMonitorLine() = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("zero luminance is omitted", func(t *testing.T) {
+		m := base
+		got := generateMonitorLine(m)
+		want := "monitor=DP-1,2560x1440@74.93,0x0,1.00,bitdepth,10,cm,hdredid"
+		if got != want {
+			t.Errorf("generateMonitorLine() = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("luminance ignored outside HDR modes", func(t *testing.T) {
+		m := base
+		m.ColorMode = "srgb"
+		m.SDRMinLuminance = 0.1
+		m.SDRMaxLuminance = 20
+		got := generateMonitorLine(m)
+		want := "monitor=DP-1,2560x1440@74.93,0x0,1.00,bitdepth,10"
+		if got != want {
+			t.Errorf("generateMonitorLine() = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("only max set", func(t *testing.T) {
+		m := base
+		m.SDRMaxLuminance = 400
+		got := generateMonitorLine(m)
+		want := "monitor=DP-1,2560x1440@74.93,0x0,1.00,bitdepth,10,cm,hdredid,sdr_max_luminance,400.00"
+		if got != want {
+			t.Errorf("generateMonitorLine() = %q, want %q", got, want)
+		}
+	})
+}
+
 func TestApplyMonitorPrefs(t *testing.T) {
 	monitors := []Monitor{
 		{Name: "DP-9", HardwareID: "Dell Inc./DELL U3419W/5HJB6T2"},

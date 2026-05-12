@@ -352,6 +352,12 @@ func applyMonitor(m Monitor) error {
 				if m.SDRSaturation != 0 && m.SDRSaturation != 1.0 {
 					cmd += fmt.Sprintf(",sdrsaturation,%.2f", m.SDRSaturation)
 				}
+				if m.SDRMinLuminance > 0 {
+					cmd += fmt.Sprintf(",sdr_min_luminance,%.2f", m.SDRMinLuminance)
+				}
+				if m.SDRMaxLuminance > 0 {
+					cmd += fmt.Sprintf(",sdr_max_luminance,%.2f", m.SDRMaxLuminance)
+				}
 			}
 
 			if m.VRR > 0 {
@@ -455,6 +461,12 @@ func generateMonitorLine(m Monitor) string {
 			}
 			if m.SDRSaturation != 0 && m.SDRSaturation != 1.0 {
 				monLine += fmt.Sprintf(",sdrsaturation,%.2f", m.SDRSaturation)
+			}
+			if m.SDRMinLuminance > 0 {
+				monLine += fmt.Sprintf(",sdr_min_luminance,%.2f", m.SDRMinLuminance)
+			}
+			if m.SDRMaxLuminance > 0 {
+				monLine += fmt.Sprintf(",sdr_max_luminance,%.2f", m.SDRMaxLuminance)
 			}
 		}
 		if m.VRR > 0 {

@@ -20,10 +20,21 @@ const (
 	fieldColorMode
 	fieldSDRBrightness
 	fieldSDRSaturation
+	fieldSDRMinLuminance
+	fieldSDRMaxLuminance
 	fieldVRR
 	fieldTransform
 	fieldUseDescFormat
 	fieldCount
+)
+
+const (
+	sdrMinLuminanceStep = 0.05
+	sdrMinLuminanceMin  = 0.0
+	sdrMinLuminanceMax  = 5.0
+	sdrMaxLuminanceStep = 5.0
+	sdrMaxLuminanceMin  = 0.0
+	sdrMaxLuminanceMax  = 10000.0
 )
 
 func newAdvancedSettingsModel(monitor *Monitor) advancedSettingsModel {
@@ -65,6 +76,13 @@ func (m advancedSettingsModel) Update(msg tea.Msg) (advancedSettingsModel, tea.C
 	return m, nil
 }
 
+func isHDRField(field int) bool {
+	return field == fieldSDRBrightness ||
+		field == fieldSDRSaturation ||
+		field == fieldSDRMinLuminance ||
+		field == fieldSDRMaxLuminance
+}
+
 func (m *advancedSettingsModel) navigateDown() {
 	isHDR := strings.Contains(m.monitor.ColorMode, "hdr")
 	descDisabled := !canUseDescFormat(*m.monitor)
@@ -74,7 +92,7 @@ func (m *advancedSettingsModel) navigateDown() {
 		if m.focusedField >= fieldCount {
 			m.focusedField = 0
 		}
-		if !isHDR && (m.focusedField == fieldSDRBrightness || m.focusedField == fieldSDRSaturation) {
+		if !isHDR && isHDRField(m.focusedField) {
 			continue
 		}
 		if descDisabled && m.focusedField == fieldUseDescFormat {
@@ -93,7 +111,7 @@ func (m *advancedSettingsModel) navigateUp() {
 		if m.focusedField < 0 {
 			m.focusedField = fieldCount - 1
 		}
-		if !isHDR && (m.focusedField == fieldSDRBrightness || m.focusedField == fieldSDRSaturation) {
+		if !isHDR && isHDRField(m.focusedField) {
 			continue
 		}
 		if descDisabled && m.focusedField == fieldUseDescFormat {
@@ -122,6 +140,24 @@ func (m *advancedSettingsModel) adjustValue(delta int) {
 		if m.monitor.SDRSaturation > 1.5 {
 			m.monitor.SDRSaturation = 1.5
 		}
+
+	case fieldSDRMinLuminance:
+		m.monitor.SDRMinLuminance += float32(delta) * sdrMinLuminanceStep
+		if m.monitor.SDRMinLuminance < sdrMinLuminanceMin {
+			m.monitor.SDRMinLuminance = sdrMinLuminanceMin
+		}
+		if m.monitor.SDRMinLuminance > sdrMinLuminanceMax {
+			m.monitor.SDRMinLuminance = sdrMinLuminanceMax
+		}
+
+	case fieldSDRMaxLuminance:
+		m.monitor.SDRMaxLuminance += float32(delta) * sdrMaxLuminanceStep
+		if m.monitor.SDRMaxLuminance < sdrMaxLuminanceMin {
+			m.monitor.SDRMaxLuminance = sdrMaxLuminanceMin
+		}
+		if m.monitor.SDRMaxLuminance > sdrMaxLuminanceMax {
+			m.monitor.SDRMaxLuminance = sdrMaxLuminanceMax
+		}
 	}
 }
 
@@ -147,8 +183,7 @@ func (m *advancedSettingsModel) toggleValue() {
 		m.monitor.ColorMode = modes[currentIdx]
 
 		// If we switched away from HDR and were focused on SDR fields, move focus
-		if !strings.Contains(m.monitor.ColorMode, "hdr") &&
-			(m.focusedField == fieldSDRBrightness || m.focusedField == fieldSDRSaturation) {
+		if !strings.Contains(m.monitor.ColorMode, "hdr") && isHDRField(m.focusedField) {
 			m.focusedField = fieldColorMode
 		}
 
@@ -184,7 +219,7 @@ func (m advancedSettingsModel) View() string {
 		BorderForeground(lipgloss.Color("42")).
 		Padding(1, 2).
 		Width(56).
-		Height(16)
+		Height(19)
 
 	titleStyle := lipgloss.NewStyle().
 		Bold(true).
@@ -259,6 +294,34 @@ func (m advancedSettingsModel) View() string {
 		label = "SDR Saturation:"
 		value = m.renderSDRSaturation()
 		if m.focusedField == fieldSDRSaturation {
+			content.WriteString(focusedLabelStyle.Render(label))
+			content.WriteString("  ")
+			content.WriteString(focusedValueStyle.Render(value))
+		} else {
+			content.WriteString(labelStyle.Render(label))
+			content.WriteString("  ")
+			content.WriteString(valueStyle.Render(value))
+		}
+		content.WriteString("\n")
+
+		// SDR Min Luminance (cd/m2)
+		label = "SDR Min Lum:"
+		value = m.renderSDRMinLuminance()
+		if m.focusedField == fieldSDRMinLuminance {
+			content.WriteString(focusedLabelStyle.Render(label))
+			content.WriteString("  ")
+			content.WriteString(focusedValueStyle.Render(value))
+		} else {
+			content.WriteString(labelStyle.Render(label))
+			content.WriteString("  ")
+			content.WriteString(valueStyle.Render(value))
+		}
+		content.WriteString("\n")
+
+		// SDR Max Luminance (cd/m2)
+		label = "SDR Max Lum:"
+		value = m.renderSDRMaxLuminance()
+		if m.focusedField == fieldSDRMaxLuminance {
 			content.WriteString(focusedLabelStyle.Render(label))
 			content.WriteString("  ")
 			content.WriteString(focusedValueStyle.Render(value))
@@ -412,6 +475,54 @@ func (m advancedSettingsModel) renderSDRSaturation() string {
 		}
 	}
 	return fmt.Sprintf("[%s] %.1f", string(slider), value)
+}
+
+func (m advancedSettingsModel) renderSDRMinLuminance() string {
+	width := 20
+	value := m.monitor.SDRMinLuminance
+	if value <= 0 {
+		return fmt.Sprintf("[%s] (unset)", strings.Repeat("─", width))
+	}
+	pos := int((value - sdrMinLuminanceMin) / (sdrMinLuminanceMax - sdrMinLuminanceMin) * float32(width))
+	if pos < 0 {
+		pos = 0
+	}
+	if pos >= width {
+		pos = width - 1
+	}
+	slider := make([]rune, width)
+	for i := range slider {
+		if i == pos {
+			slider[i] = '●'
+		} else {
+			slider[i] = '─'
+		}
+	}
+	return fmt.Sprintf("[%s] %.2f cd/m²", string(slider), value)
+}
+
+func (m advancedSettingsModel) renderSDRMaxLuminance() string {
+	width := 20
+	value := m.monitor.SDRMaxLuminance
+	if value <= 0 {
+		return fmt.Sprintf("[%s] (unset)", strings.Repeat("─", width))
+	}
+	pos := int((value - sdrMaxLuminanceMin) / (sdrMaxLuminanceMax - sdrMaxLuminanceMin) * float32(width))
+	if pos < 0 {
+		pos = 0
+	}
+	if pos >= width {
+		pos = width - 1
+	}
+	slider := make([]rune, width)
+	for i := range slider {
+		if i == pos {
+			slider[i] = '●'
+		} else {
+			slider[i] = '─'
+		}
+	}
+	return fmt.Sprintf("[%s] %.0f cd/m²", string(slider), value)
 }
 
 func (m advancedSettingsModel) renderVRR() string {

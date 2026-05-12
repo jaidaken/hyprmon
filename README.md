@@ -1,4 +1,8 @@
-# HyprMon
+# HyprMon (fork)
+
+> Fork of [erans/hyprmon](https://github.com/erans/hyprmon) v0.0.15 adding HDR
+> `sdr_min_luminance` and `sdr_max_luminance` controls. All other behaviour is
+> identical to upstream. PR to upstream is the eventual goal.
 
 HyprMon is a TUI (Terminal User Interface) tool for configuring monitors on Arch Linux running Wayland with Hyprland. It provides a visual "desk map" where you can arrange monitors using keyboard and mouse controls, with real-time application to Hyprland.
 
@@ -11,7 +15,7 @@ HyprMon is a TUI (Terminal User Interface) tool for configuring monitors on Arch
 - **Scale Selection**: Interactive menu with common DPI scaling values (0.5x to 3.0x)
 - **Resolution & Refresh Rate**: Choose from all available display modes (1080p@144Hz, 4K@60Hz, etc.)
 - **Advanced Display Settings**: Color depth (8/10-bit), color management (sRGB/Wide/HDR), VRR, rotation/transform
-- **HDR Support**: HDR color mode with SDR brightness and saturation controls
+- **HDR Support**: HDR color mode with SDR brightness, saturation, and min/max luminance controls
 - **Monitor Mirroring**: Mirror one monitor to another with visual feedback and circular dependency prevention
 - **Visual Indicators**: Monitor boxes show HDR, 10-bit, VRR, transform status, and mirror relationships
 - **Live Apply**: Instantly apply changes to Hyprland or save them to configuration
@@ -136,6 +140,7 @@ Press `C` or `D` in the main UI to open the advanced display settings dialog for
 - **Color Depth**: Switch between 8-bit and 10-bit color depth
 - **Color Mode**: Choose from Auto, sRGB, Wide, HDR, or HDR-EDID color management
 - **SDR Controls**: When in HDR mode, adjust SDR brightness (0.5-2.0) and saturation (0.5-1.5)
+- **SDR Luminance Range**: When in HDR mode, set SDR min luminance (0.0-5.0 cd/m²) and max luminance (0-10000 cd/m²) for tone-mapping. Leave at zero to use Hyprland's default.
 
 ### Display Features  
 - **VRR (Variable Refresh Rate)**: Configure VRR mode as Off, On, or Fullscreen-only
@@ -146,7 +151,7 @@ Press `C` or `D` in the main UI to open the advanced display settings dialog for
 |-----|--------|
 | `Tab` / `↑↓` | Navigate between settings |
 | `Space` | Toggle boolean settings |
-| `←→` | Adjust slider values (SDR brightness/saturation) |
+| `←→` | Adjust slider values (SDR brightness/saturation/min lum/max lum) |
 | `Enter` | Apply changes and close dialog |
 | `Esc` | Cancel changes and close dialog |
 
