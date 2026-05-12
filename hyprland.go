@@ -110,6 +110,31 @@ func applyMonitorPrefs(monitors []Monitor, s *Settings) {
 		}
 		pref := getMonitorPref(s, monitors[i].HardwareID)
 		monitors[i].UseDescFormat = pref.UseDescFormat
+		monitors[i].IsPrimary = pref.Primary
+	}
+}
+
+// normalizePositions shifts every monitor so the primary sits at (0, 0).
+// No-op when no monitor is marked primary, or when the primary monitor is
+// inactive. Operates in place.
+func normalizePositions(monitors []Monitor) {
+	var primary *Monitor
+	for i := range monitors {
+		if monitors[i].IsPrimary && monitors[i].Active {
+			primary = &monitors[i]
+			break
+		}
+	}
+	if primary == nil {
+		return
+	}
+	dx, dy := primary.X, primary.Y
+	if dx == 0 && dy == 0 {
+		return
+	}
+	for i := range monitors {
+		monitors[i].X -= dx
+		monitors[i].Y -= dy
 	}
 }
 
@@ -381,6 +406,7 @@ func applyMonitor(m Monitor) error {
 }
 
 func applyMonitors(monitors []Monitor) error {
+	normalizePositions(monitors)
 	for _, m := range monitors {
 		if err := applyMonitor(m); err != nil {
 			return fmt.Errorf("failed to apply monitor %s: %w", m.Name, err)
@@ -481,6 +507,7 @@ func generateMonitorLine(m Monitor) string {
 }
 
 func writeConfig(monitors []Monitor) error {
+	normalizePositions(monitors)
 	configPath := getConfigPath()
 	if configPath == "" {
 		return fmt.Errorf("could not determine config path")

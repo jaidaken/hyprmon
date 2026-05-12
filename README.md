@@ -1,6 +1,6 @@
 # HyprMon (fork)
 
-> Fork of [erans/hyprmon](https://github.com/erans/hyprmon) v0.0.15 with two
+> Fork of [erans/hyprmon](https://github.com/erans/hyprmon) v0.0.15 with three
 > additions on top of upstream:
 >
 > 1. HDR `sdr_min_luminance` and `sdr_max_luminance` controls in the Advanced
@@ -8,6 +8,13 @@
 > 2. Live-apply: every change in the Advanced Display Settings dialog pushes
 >    to Hyprland after a 150ms debounce, so you can tweak HDR/colour settings
 >    against a reference image without pressing Apply between each step.
+> 3. Primary monitor anchor: press `1` on a selected monitor to mark it as
+>    primary. On apply, all positions are shifted so the primary sits at
+>    `(0, 0)` and the others move by the same delta to keep the relative
+>    arrangement. Persisted per HardwareID in `settings.json`. Covers the
+>    `(0, 0)`-fallback path some apps use when choosing which monitor to
+>    open on; combine with `workspace=..., default:true` in `hyprland.conf`
+>    for full "main monitor" behaviour.
 >
 > All other behaviour is identical to upstream. PR to upstream is the
 > eventual goal.

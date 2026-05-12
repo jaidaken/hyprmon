@@ -602,6 +602,27 @@ func (m model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.ProfileInput = newProfileInput()
 		m.ShowProfileInput = true
 
+	case "1":
+		// Mark selected monitor as primary; normalizePositions anchors it at (0,0) on apply.
+		if m.Selected < 0 || m.Selected >= len(m.Monitors) {
+			break
+		}
+		mon := &m.Monitors[m.Selected]
+		if mon.HardwareID == "" {
+			m.Status = fmt.Sprintf("Cannot mark %s primary: no HardwareID", mon.Name)
+			break
+		}
+		for i := range m.Monitors {
+			m.Monitors[i].IsPrimary = false
+		}
+		mon.IsPrimary = true
+		if s, err := loadSettings(); err == nil {
+			setPrimaryPref(s, mon.HardwareID)
+			_ = saveSettings(s)
+		}
+		m.Status = fmt.Sprintf("%s is now primary", mon.DisplayLabel())
+		return m, applyCmd(m.Monitors)
+
 	case "enter", " ":
 		if m.Selected >= 0 && m.Selected < len(m.Monitors) {
 			if m.canDisableMonitor(m.Selected) {

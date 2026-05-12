@@ -157,6 +157,7 @@ func (m model) renderHelp() string {
 		{"S", "Save current configuration to Hyprland. Will persist restarts"},
 		{"O", "Open profiles page"},
 		{"P", "Save as profile"},
+		{"1", "Mark selected monitor as primary (anchored at 0,0 on apply)"},
 		{"Z", "Revert to previous configuration"},
 		{"?", "Show this help"},
 		{"Q / Ctrl+C", "Quit"},
@@ -443,6 +444,9 @@ func (m model) renderMonitor(desktop [][]rune, mon Monitor, selected bool) {
 
 	// Add advanced settings indicators
 	var indicators []string
+	if mon.IsPrimary {
+		indicators = append(indicators, "★1")
+	}
 	if mon.BitDepth == 10 {
 		indicators = append(indicators, "10bit")
 	}

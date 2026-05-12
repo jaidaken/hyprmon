@@ -38,6 +38,11 @@ type Monitor struct {
 	VRR             int     // 0=off, 1=on, 2=fullscreen-only
 	Transform       int     // 0-7 for rotation/flip
 
+	// Primary monitor anchor: when true, normalizePositions shifts all monitors
+	// so this one sits at (0, 0). Mutually exclusive across all monitors.
+	// Persisted in settings.json keyed by HardwareID.
+	IsPrimary bool
+
 	// Mirror settings
 	IsMirrored    bool     // Whether this monitor is mirroring another
 	MirrorSource  string   // Name of monitor being mirrored (empty if not mirroring)

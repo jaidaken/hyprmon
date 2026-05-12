@@ -11,6 +11,7 @@ import (
 // the monitor's HardwareID.
 type MonitorPref struct {
 	UseDescFormat bool `json:"use_desc_format,omitempty"`
+	Primary       bool `json:"primary,omitempty"`
 }
 
 // Settings is the on-disk hyprmon settings file.
@@ -129,5 +130,42 @@ func setMonitorPref(s *Settings, hwid string, pref MonitorPref) {
 	if s.MonitorPrefs == nil {
 		s.MonitorPrefs = make(map[string]MonitorPref)
 	}
+	s.MonitorPrefs[hwid] = pref
+}
+
+// setPrimaryPref marks one HardwareID as primary and clears Primary on every
+// other entry. Mutual exclusion is enforced here so callers can't accidentally
+// leave the file with two primaries.
+func setPrimaryPref(s *Settings, hwid string) {
+	if s == nil || hwid == "" {
+		return
+	}
+	if s.MonitorPrefs == nil {
+		s.MonitorPrefs = make(map[string]MonitorPref)
+	}
+	for k, p := range s.MonitorPrefs {
+		if k == hwid {
+			continue
+		}
+		if p.Primary {
+			p.Primary = false
+			s.MonitorPrefs[k] = p
+		}
+	}
+	pref := s.MonitorPrefs[hwid]
+	pref.Primary = true
+	s.MonitorPrefs[hwid] = pref
+}
+
+// clearPrimaryPref unsets Primary on the given HardwareID.
+func clearPrimaryPref(s *Settings, hwid string) {
+	if s == nil || hwid == "" || s.MonitorPrefs == nil {
+		return
+	}
+	pref, ok := s.MonitorPrefs[hwid]
+	if !ok {
+		return
+	}
+	pref.Primary = false
 	s.MonitorPrefs[hwid] = pref
 }
