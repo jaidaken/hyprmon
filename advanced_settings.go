@@ -3,16 +3,43 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+const liveApplyDebounce = 150 * time.Millisecond
+
+type liveApplyTickMsg struct {
+	gen uint64
+}
+
+type liveApplyResultMsg struct {
+	err error
+}
+
+// liveApplyFn is the function the dialog calls to push a monitor's state to
+// Hyprland. Indirected through a package var so tests can inject a fake.
+var liveApplyFn = applyMonitor
 
 type advancedSettingsModel struct {
 	monitor      *Monitor
 	focusedField int
 	width        int
 	height       int
+	liveApplyGen uint64
+}
+
+// scheduleLiveApply bumps the generation counter and returns a debounced tick.
+// When the tick fires, Update compares its captured gen against the current
+// counter; if a later edit superseded it, the tick is dropped.
+func (m *advancedSettingsModel) scheduleLiveApply() tea.Cmd {
+	m.liveApplyGen++
+	gen := m.liveApplyGen
+	return tea.Tick(liveApplyDebounce, func(time.Time) tea.Msg {
+		return liveApplyTickMsg{gen: gen}
+	})
 }
 
 const (
@@ -54,6 +81,16 @@ func (m advancedSettingsModel) Update(msg tea.Msg) (advancedSettingsModel, tea.C
 		m.width = msg.Width
 		m.height = msg.Height
 
+	case liveApplyTickMsg:
+		if msg.gen != m.liveApplyGen {
+			// superseded by a later edit
+			return m, nil
+		}
+		monCopy := *m.monitor
+		return m, func() tea.Msg {
+			return liveApplyResultMsg{err: liveApplyFn(monCopy)}
+		}
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "up", "shift+tab":
@@ -64,16 +101,29 @@ func (m advancedSettingsModel) Update(msg tea.Msg) (advancedSettingsModel, tea.C
 
 		case "left":
 			m.adjustValue(-1)
+			return m, m.scheduleLiveApply()
 
 		case "right":
 			m.adjustValue(1)
+			return m, m.scheduleLiveApply()
 
 		case " ", "space":
+			if m.shouldLiveApplyToggle() {
+				m.toggleValue()
+				return m, m.scheduleLiveApply()
+			}
 			m.toggleValue()
 		}
 	}
 
 	return m, nil
+}
+
+// shouldLiveApplyToggle returns false for fields whose toggle doesn't change
+// runtime monitor state (currently just UseDescFormat, which only affects
+// how monitor= lines are persisted to hyprland.conf).
+func (m advancedSettingsModel) shouldLiveApplyToggle() bool {
+	return m.focusedField != fieldUseDescFormat
 }
 
 func isHDRField(field int) bool {

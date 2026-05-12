@@ -317,6 +317,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case liveApplyResultMsg:
+		// Quiet on success: live-apply fires on every slider tick and would
+		// otherwise spam the status line. Surface only failures.
+		if msg.err != nil {
+			m.Status = fmt.Sprintf("Live apply failed: %v", msg.err)
+		}
+		return m, nil
+
 	case saveMsg:
 		if msg.success {
 			m.Status = "Configuration saved"

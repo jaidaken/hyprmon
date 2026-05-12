@@ -1,8 +1,16 @@
 # HyprMon (fork)
 
-> Fork of [erans/hyprmon](https://github.com/erans/hyprmon) v0.0.15 adding HDR
-> `sdr_min_luminance` and `sdr_max_luminance` controls. All other behaviour is
-> identical to upstream. PR to upstream is the eventual goal.
+> Fork of [erans/hyprmon](https://github.com/erans/hyprmon) v0.0.15 with two
+> additions on top of upstream:
+>
+> 1. HDR `sdr_min_luminance` and `sdr_max_luminance` controls in the Advanced
+>    Display Settings dialog.
+> 2. Live-apply: every change in the Advanced Display Settings dialog pushes
+>    to Hyprland after a 150ms debounce, so you can tweak HDR/colour settings
+>    against a reference image without pressing Apply between each step.
+>
+> All other behaviour is identical to upstream. PR to upstream is the
+> eventual goal.
 
 HyprMon is a TUI (Terminal User Interface) tool for configuring monitors on Arch Linux running Wayland with Hyprland. It provides a visual "desk map" where you can arrange monitors using keyboard and mouse controls, with real-time application to Hyprland.
 
@@ -150,10 +158,15 @@ Press `C` or `D` in the main UI to open the advanced display settings dialog for
 | Key | Action |
 |-----|--------|
 | `Tab` / `↑↓` | Navigate between settings |
-| `Space` | Toggle boolean settings |
+| `Space` | Toggle boolean settings (applies live except UseDescFormat) |
 | `←→` | Adjust slider values (SDR brightness/saturation/min lum/max lum) |
-| `Enter` | Apply changes and close dialog |
-| `Esc` | Cancel changes and close dialog |
+| `Enter` | Close dialog (state already applied live) |
+| `Esc` | Close dialog without reverting the last live-applied state |
+
+Every adjustment in this dialog pushes to Hyprland after a 150ms debounce, so
+holding an arrow key feels smooth and the last value wins. `UseDescFormat` is
+the only toggle that is not applied live, since it only affects how monitor
+lines are persisted to `hyprland.conf` and does not change runtime state.
 
 ## Monitor Mirroring
 
