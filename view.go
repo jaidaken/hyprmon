@@ -41,30 +41,52 @@ var (
 			BorderForeground(lipgloss.Color("240"))
 )
 
+// dialogBoxStyle is the shared bordered container used by pickers so every
+// overlay has matching chrome.
+var dialogBoxStyle = lipgloss.NewStyle().
+	Border(lipgloss.RoundedBorder()).
+	BorderForeground(lipgloss.Color("42")).
+	Padding(1, 2)
+
+// wrapDialog applies the shared border style to a picker's content.
+func wrapDialog(content string) string {
+	return dialogBoxStyle.Render(content)
+}
+
+// centerDialog wraps a rendered dialog in lipgloss.Place using the current
+// terminal size so every overlay sits centred with consistent margins.
+func (m model) centerDialog(s string) string {
+	w := int(m.World.TermW)
+	h := int(m.World.TermH)
+	if w <= 0 {
+		w = 80
+	}
+	if h <= 0 {
+		h = 24
+	}
+	return lipgloss.Place(w, h, lipgloss.Center, lipgloss.Center, s)
+}
+
 func (m model) View() string {
 	// Show help if active
 	if m.ShowHelp {
 		return m.renderHelp()
 	}
 
-	// Show profile input if active
+	// Picker dialogs render their own content; we wrap in a centering Place
+	// using the current terminal size so every dialog sits centered with
+	// consistent margins regardless of terminal dimensions.
 	if m.ShowProfileInput {
-		return m.ProfileInput.View()
+		return m.centerDialog(m.ProfileInput.View())
 	}
-
-	// Show scale picker if active
 	if m.ShowScalePicker {
-		return m.ScalePicker.View()
+		return m.centerDialog(m.ScalePicker.View())
 	}
-
-	// Show mode picker if active
 	if m.ShowModePicker {
-		return m.ModePicker.View()
+		return m.centerDialog(m.ModePicker.View())
 	}
-
-	// Show mirror picker if active
 	if m.ShowMirrorPicker {
-		return m.MirrorPicker.View()
+		return m.centerDialog(m.MirrorPicker.View())
 	}
 
 	// Show advanced settings dialog if active

@@ -157,7 +157,7 @@ func (m profileInputModel) View() string {
 		s.WriteString("\n")
 		s.WriteString("Do you want to override it? (y/n)")
 
-		return s.String()
+		return wrapDialog(s.String())
 	}
 
 	s.WriteString(titleStyle.Render("Save Profile"))
@@ -227,5 +227,5 @@ func (m profileInputModel) View() string {
 
 	s.WriteString(suggestionStyle.Render("Suggestions: home, work, laptop, presentation, gaming"))
 
-	return s.String()
+	return wrapDialog(s.String())
 }

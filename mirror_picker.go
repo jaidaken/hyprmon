@@ -183,7 +183,7 @@ func (m mirrorPickerModel) View() string {
 		b.WriteString("\n\n")
 
 		b.WriteString("Press ESC to cancel")
-		return b.String()
+		return wrapDialog(b.String())
 	}
 
 	b.WriteString("Select a monitor to mirror from:\n\n")
@@ -223,11 +223,11 @@ func (m mirrorPickerModel) View() string {
 	// Add warning about resolution mismatches if applicable
 	if len(m.availableMonitors) > 1 {
 		warningStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("208"))
-		b.WriteString(warningStyle.Render("⚠  Mirroring monitors with different resolutions may cause stretching"))
+		b.WriteString(warningStyle.Render("Warning: mirroring monitors with different resolutions may cause stretching"))
 		b.WriteString("\n")
 	}
 
-	b.WriteString("↑/↓: Navigate  Enter: Select  ESC: Cancel")
+	b.WriteString("Up/Down: Navigate  Enter: Select  ESC: Cancel")
 
-	return b.String()
+	return wrapDialog(b.String())
 }

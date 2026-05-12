@@ -256,9 +256,9 @@ func (m modePickerModel) View() string {
 		aspectStr = "Classic (4:3)"
 	}
 
-	preview := fmt.Sprintf("Resolution: %dx%d • Aspect: %s • Refresh: %.2fHz",
+	preview := fmt.Sprintf("Resolution: %dx%d  Aspect: %s  Refresh: %.2fHz",
 		selectedMode.Width, selectedMode.Height, aspectStr, selectedMode.RefreshRate)
 	s.WriteString(previewStyle.Render(preview))
 
-	return s.String()
+	return wrapDialog(s.String())
 }

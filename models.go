@@ -202,20 +202,22 @@ func (m *model) getEffectiveDimensions(mon Monitor) (int32, int32) {
 }
 
 func (m *model) worldToTerm(x, y int32) (int, int) {
-	// Use desktop dimensions (accounting for borders and UI elements)
 	desktopWidth := m.World.TermW - desktopBorderMargin
 	desktopHeight := m.World.TermH - desktopFooterHeight
-
+	if m.World.Width <= 0 || m.World.Height <= 0 {
+		return 0, 0
+	}
 	termX := int(float32(x-m.World.OffsetX) * float32(desktopWidth) / float32(m.World.Width))
 	termY := int(float32(y-m.World.OffsetY) * float32(desktopHeight) / float32(m.World.Height))
 	return termX, termY
 }
 
 func (m *model) termToWorld(x, y int) (int32, int32) {
-	// Use desktop dimensions (accounting for borders and UI elements)
 	desktopWidth := m.World.TermW - desktopBorderMargin
 	desktopHeight := m.World.TermH - desktopFooterHeight
-
+	if desktopWidth <= 0 || desktopHeight <= 0 {
+		return m.World.OffsetX, m.World.OffsetY
+	}
 	worldX := int32(float32(x)*float32(m.World.Width)/float32(desktopWidth)) + m.World.OffsetX
 	worldY := int32(float32(y)*float32(m.World.Height)/float32(desktopHeight)) + m.World.OffsetY
 	return worldX, worldY

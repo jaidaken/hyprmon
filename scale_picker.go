@@ -162,16 +162,11 @@ func (m scalePickerModel) View() string {
 
 	// Custom input mode
 	if m.customMode {
-		customStyle := lipgloss.NewStyle().
-			BorderStyle(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("62")).
-			Padding(1).
-			Width(40)
-
-		s.WriteString(customStyle.Render(
-			fmt.Sprintf("Enter Custom Scale:\n\n%s\n\nValid range: 0.1 - 10.0\nPress Enter to confirm, Esc to cancel", m.customInput.View()),
+		return wrapDialog(fmt.Sprintf(
+			"%s\n\nEnter Custom Scale:\n\n%s\n\nValid range: 0.1 - 10.0\nPress Enter to confirm, Esc to cancel",
+			titleStyle.Render(fmt.Sprintf("Select Scale for %s", m.monitor)),
+			m.customInput.View(),
 		))
-		return s.String()
 	}
 
 	itemStyle := lipgloss.NewStyle().
@@ -245,10 +240,10 @@ func (m scalePickerModel) View() string {
 		Italic(true)
 
 	selectedScale := m.scales[m.selected]
-	effectiveRes := fmt.Sprintf("Physical: %dx%d → Effective: %dx%d",
+	effectiveRes := fmt.Sprintf("Physical: %dx%d -> Effective: %dx%d",
 		m.width, m.height,
 		int(float32(m.width)/selectedScale), int(float32(m.height)/selectedScale))
 	s.WriteString(previewStyle.Render(effectiveRes))
 
-	return s.String()
+	return wrapDialog(s.String())
 }

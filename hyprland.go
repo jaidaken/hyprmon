@@ -180,22 +180,22 @@ type hyprMonitor struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
 	} `json:"activeWorkspace"`
-	Reserved        []int    `json:"reserved"`
-	Scale           float64  `json:"scale"`
-	Transform       int      `json:"transform"`
-	Focused         bool     `json:"focused"`
-	DpmsStatus      bool     `json:"dpmsStatus"`
-	VRR             bool     `json:"vrr"`
-	ActivelyTearing        bool     `json:"activelyTearing"`
-	Disabled               bool     `json:"disabled"`
-	CurrentFormat          string   `json:"currentFormat"`
-	MirrorOf               string   `json:"mirrorOf"`
-	AvailableModes         []string `json:"availableModes"`
-	ColorManagementPreset  string   `json:"colorManagementPreset"`
-	SDRBrightness          float64  `json:"sdrBrightness"`
-	SDRSaturation          float64  `json:"sdrSaturation"`
-	SDRMinLuminance        float64  `json:"sdrMinLuminance"`
-	SDRMaxLuminance        float64  `json:"sdrMaxLuminance"`
+	Reserved              []int    `json:"reserved"`
+	Scale                 float64  `json:"scale"`
+	Transform             int      `json:"transform"`
+	Focused               bool     `json:"focused"`
+	DpmsStatus            bool     `json:"dpmsStatus"`
+	VRR                   bool     `json:"vrr"`
+	ActivelyTearing       bool     `json:"activelyTearing"`
+	Disabled              bool     `json:"disabled"`
+	CurrentFormat         string   `json:"currentFormat"`
+	MirrorOf              string   `json:"mirrorOf"`
+	AvailableModes        []string `json:"availableModes"`
+	ColorManagementPreset string   `json:"colorManagementPreset"`
+	SDRBrightness         float64  `json:"sdrBrightness"`
+	SDRSaturation         float64  `json:"sdrSaturation"`
+	SDRMinLuminance       float64  `json:"sdrMinLuminance"`
+	SDRMaxLuminance       float64  `json:"sdrMaxLuminance"`
 }
 
 type hyprWorkspace struct {
@@ -254,11 +254,11 @@ func readMonitors() ([]Monitor, error) {
 				}
 				return 8
 			}(),
-			ColorMode:       hm.ColorManagementPreset,
-			SDRBrightness:   float32(hm.SDRBrightness),
-			SDRSaturation:   float32(hm.SDRSaturation),
-			SDRMinLuminance: float32(hm.SDRMinLuminance),
-			SDRMaxLuminance: float32(hm.SDRMaxLuminance),
+			ColorMode:         hm.ColorManagementPreset,
+			SDRBrightness:     float32(hm.SDRBrightness),
+			SDRSaturation:     float32(hm.SDRSaturation),
+			SDRMinLuminance:   float32(hm.SDRMinLuminance),
+			SDRMaxLuminance:   float32(hm.SDRMaxLuminance),
 			SupportsHDR:       monitorSupportsHDR(hm.Name),
 			EDIDPeakLuminance: monitorEDIDPeakLuminance(hm.Name),
 
@@ -477,39 +477,6 @@ func generateMonitorV2Block(m Monitor) string {
 
 	sb.WriteString("}\n")
 	return sb.String()
-}
-
-// stripMonitorDecls returns content with any top-level monitorv2 { ... } blocks
-// and any v1 monitor= / monitor = lines removed. Preserves all other content
-// including comments. Brace-balanced parser handles nested braces if any.
-func stripMonitorDecls(content string) string {
-	lines := strings.Split(content, "\n")
-	out := make([]string, 0, len(lines))
-	inBlock := false
-	depth := 0
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if !inBlock {
-			if strings.HasPrefix(trimmed, "monitorv2") && strings.Contains(trimmed, "{") {
-				inBlock = true
-				depth = strings.Count(trimmed, "{") - strings.Count(trimmed, "}")
-				if depth <= 0 {
-					inBlock = false
-				}
-				continue
-			}
-			if strings.HasPrefix(trimmed, "monitor=") || strings.HasPrefix(trimmed, "monitor ") {
-				continue
-			}
-			out = append(out, line)
-			continue
-		}
-		depth += strings.Count(line, "{") - strings.Count(line, "}")
-		if depth <= 0 {
-			inBlock = false
-		}
-	}
-	return strings.Join(out, "\n")
 }
 
 // writeOrReplaceMonitorV2 writes/replaces a single monitor's v2 block in the
