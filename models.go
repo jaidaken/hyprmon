@@ -38,6 +38,11 @@ type Monitor struct {
 	VRR             int     // 0=off, 1=on, 2=fullscreen-only
 	Transform       int     // 0-7 for rotation/flip
 
+	// SupportsHDR is true when the panel's EDID advertises an HDR Static
+	// Metadata Data Block. Used by the dialog to hide HDR color modes and
+	// HDR-gated sliders on panels that can't actually display HDR.
+	SupportsHDR bool
+
 	// Primary monitor anchor: when true, normalizePositions shifts all monitors
 	// so this one sits at (0, 0). Mutually exclusive across all monitors.
 	// Persisted in settings.json keyed by HardwareID.

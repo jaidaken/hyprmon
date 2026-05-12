@@ -244,7 +244,7 @@ func (m *advancedSettingsModel) toggleValue() {
 		}
 
 	case fieldColorMode:
-		modes := []string{"auto", "srgb", "wide", "edid", "hdr", "hdredid"}
+		modes := colorModesFor(m.monitor)
 		currentIdx := 0
 		for i, mode := range modes {
 			if m.monitor.ColorMode == mode {
@@ -524,7 +524,7 @@ func (m advancedSettingsModel) renderBitDepth() string {
 }
 
 func (m advancedSettingsModel) renderColorMode() string {
-	modes := map[string]string{
+	labels := map[string]string{
 		"auto":    "Auto",
 		"srgb":    "sRGB",
 		"wide":    "Wide",
@@ -534,14 +534,24 @@ func (m advancedSettingsModel) renderColorMode() string {
 	}
 
 	var parts []string
-	for _, key := range []string{"auto", "srgb", "wide", "edid", "hdr", "hdredid"} {
+	for _, key := range colorModesFor(m.monitor) {
 		if m.monitor.ColorMode == key {
-			parts = append(parts, "● "+modes[key])
+			parts = append(parts, "● "+labels[key])
 		} else {
-			parts = append(parts, "○ "+modes[key])
+			parts = append(parts, "○ "+labels[key])
 		}
 	}
 	return strings.Join(parts, "  ")
+}
+
+// colorModesFor returns the color-mode set available to a monitor. HDR modes
+// are filtered out when the panel's EDID doesn't advertise HDR Static
+// Metadata.
+func colorModesFor(mon *Monitor) []string {
+	if mon != nil && !mon.SupportsHDR {
+		return []string{"auto", "srgb", "wide", "edid"}
+	}
+	return []string{"auto", "srgb", "wide", "edid", "hdr", "hdredid"}
 }
 
 func (m advancedSettingsModel) renderSDRBrightness() string {

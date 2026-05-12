@@ -259,6 +259,7 @@ func readMonitors() ([]Monitor, error) {
 			SDRSaturation:   float32(hm.SDRSaturation),
 			SDRMinLuminance: float32(hm.SDRMinLuminance),
 			SDRMaxLuminance: float32(hm.SDRMaxLuminance),
+			SupportsHDR:     monitorSupportsHDR(hm.Name),
 
 			// Mirror settings
 			IsMirrored: hm.MirrorOf != "" && hm.MirrorOf != "none",
